@@ -3,11 +3,9 @@ import logging
 import os
 import shlex
 import time
-from asyncio import Queue
-from typing import Dict, Set
+from typing import Set
 
 from elaspic_rest_api import config
-from elaspic_rest_api.jobsubmitter.cleanup import set_db_errors
 from elaspic_rest_api import jobsubmitter as js
 
 logger = logging.getLogger(__name__)
@@ -60,22 +58,16 @@ async def qstat(running_jobs: Set):
         await asyncio.sleep(js.perf.SLEEP_FOR_QSTAT)
 
 
-async def validation(
-    qsub_queue: Queue,
-    validation_queue: Queue,
-    running_jobs: Set,
-    precalculated_cache: Dict,
-    monitored_jobs: Dict,
-):
+async def validation(ds: js.DataStructures):
     """Validate finished jobs."""
     global validation_last_updated
     while True:
-        for _ in range(validation_queue.qsize()):
+        for _ in range(ds.validation_queue.qsize()):
             logger.debug("validation")
-            item = await validation_queue.get()
-            if (item.start_time > running_jobs_last_updated) or (item.job_id in running_jobs):
+            item = await ds.validation_queue.get()
+            if (item.start_time > running_jobs_last_updated) or (item.job_id in ds.running_jobs):
                 logger.debug("Job not ready for validation")
-                await validation_queue.put(item)
+                await ds.validation_queue.put(item)
                 await asyncio.sleep(js.perf.SLEEP_FOR_LOOP)
                 continue
             #
@@ -95,8 +87,8 @@ async def validation(
             if validated:
                 if item.run_type in ["sequence", "model"]:
                     logger.debug("Adding finished job {} to cache...".format(item.job_id))
-                    precalculated_cache[item.unique_id] = item.job_id
-                    logger.debug("precalculated_cache: {}".format(precalculated_cache))
+                    ds.precalculated_cache[item.unique_id] = item.job_id
+                    logger.debug("precalculated_cache: {}".format(ds.precalculated_cache))
                 message = "Making sure the lock file '{}' has been removed... ".format(
                     item.lock_path
                 )
@@ -105,7 +97,7 @@ async def validation(
                     logger.debug(message + "nope!")
                 except FileNotFoundError:
                     logger.debug(message + "yup!")
-                remove_from_monitored_jobs(item, monitored_jobs)
+                js.remove_from_monitored(item, ds.monitored_jobs)
             else:
                 error_message = "Failed to validate with system command:\n{}".format(system_command)
                 restarting = (item.validation_tries < 5) & (
@@ -121,9 +113,10 @@ async def validation(
                 if restarting:
                     logger.error(error_message + " Restarting...")
                     item.validation_tries += 1
-                    await qsub_queue.put(item)
+                    await ds.qsub_queue.put(item)
                 else:
                     logger.error(error_message + " Out of time. Skipping...")
-                    await set_db_errors([item])
+                    await js.remove_from_monitored(item, ds.monitored_jobs)
+                    await js.set_db_errors([item])
             await asyncio.sleep(js.perf.SLEEP_FOR_LOOP)
         await asyncio.sleep(js.perf.SLEEP_FOR_QSTAT)

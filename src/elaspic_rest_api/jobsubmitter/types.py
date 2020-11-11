@@ -2,10 +2,9 @@ import os.path as op
 import time
 from asyncio import Queue
 from dataclasses import dataclass, field
-from typing import Dict, List, NamedTuple, Optional, Set, TypedDict
+from typing import Dict, NamedTuple, Optional, Set, TypedDict
 
 from elaspic_rest_api import config
-from elaspic_rest_api import jobsubmitter as js
 
 
 class JobKey(NamedTuple):
@@ -40,6 +39,8 @@ class DataStructures:
 
 class Args(TypedDict):
     job_type: str
+    job_id: int
+    job_email: Optional[str]
     protein_id: str
     mutations: str
     structure_file: Optional[str]

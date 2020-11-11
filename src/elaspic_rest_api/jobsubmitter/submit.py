@@ -4,9 +4,7 @@ import os
 import re
 import shlex
 import time
-from asyncio import Queue
 from textwrap import dedent
-from typing import Dict
 
 from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
@@ -70,37 +68,34 @@ def create_qsub_system_command(item: js.Item) -> str:
     return system_command
 
 
-async def pre_qsub(
-    pre_qsub_queue: Queue, qsub_queue: Queue, precalculated: Dict, precalculated_cache: Dict
-) -> None:
+async def pre_qsub(ds: js.DataStructures) -> None:
     """Wait while the sequence and model prerequisites are being calculated."""
     while True:
-        for _ in range(pre_qsub_queue.qsize()):
+        for _ in range(ds.pre_qsub_queue.qsize()):
             logger.debug("pre_qsub")
-            item = await pre_qsub_queue.get()
-            have_prereqs = js.check_prereqs(item.prereqs, precalculated, precalculated_cache)
+            item = await ds.pre_qsub_queue.get()
+            have_prereqs = js.check_prereqs(item.prereqs, ds.precalculated, ds.precalculated_cache)
             if not have_prereqs:
                 logger.debug("Waiting for prereqs: {}".format(item.prereqs))
                 restarting = abs(time.time() - item.init_time) < js.perf.JOB_TIMEOUT
                 if restarting:
-                    await pre_qsub_queue.put(item)
+                    await ds.pre_qsub_queue.put(item)
                 else:
+                    await js.remove_from_monitored(item, ds.monitored_jobs)
                     await js.set_db_errors([item])
             else:
-                await qsub_queue.put(item)
+                await ds.qsub_queue.put(item)
             await asyncio.sleep(js.perf.SLEEP_FOR_LOOP)
         await asyncio.sleep(js.perf.SLEEP_FOR_QSTAT)
 
 
-async def qsub(
-    qsub_queue: Queue, validation_queue: Queue, precalculated: Dict, precalculated_cache: Dict
-) -> None:
+async def qsub(ds: js.DataStructures) -> None:
     """Submit jobs."""
     while True:
-        item = await qsub_queue.get()
+        item = await ds.qsub_queue.get()
 
         if item.run_type in ["sequence", "model"] and (
-            item.unique_id in precalculated_cache or item.unique_id in precalculated
+            item.unique_id in ds.precalculated_cache or item.unique_id in ds.precalculated
         ):
             logger.debug("Item '{}' already calculated. Skipping...".format(item.unique_id))
             continue
@@ -126,30 +121,34 @@ async def qsub(
             logger.debug("job_id: %s", job_ids)
 
             if not job_ids:
-                restart_or_drop(item, qsub_queue, system_command, result, error_message)
+                restart_or_drop(item, ds.qsub_queue, system_command, result, error_message)
                 continue
 
             try:
                 job_id = job_ids[0]
             except ValueError:
-                restart_or_drop(item, qsub_queue, system_command, result, error_message)
+                restart_or_drop(item, ds.qsub_queue, system_command, result, error_message)
                 continue
 
             item.set_job_id(job_id)
-            await validation_queue.put(item)
+            await ds.validation_queue.put(item)
         except Exception as e:
             try:
                 os.remove(item.lock_path)
             except FileNotFoundError:
                 pass
             await asyncio.sleep(js.perf.SLEEP_FOR_ERROR)
-            restart_or_drop(item, qsub_queue, error_message=str(e))
+            restart_or_drop(item, ds.qsub_queue, error_message=str(e))
         #
         await asyncio.sleep(js.perf.SLEEP_FOR_QSUB)
 
 
 async def restart_or_drop(
-    item: js.Item, qsub_queue: Queue, system_command: str = "unk", result="unk", error_message="unk"
+    item: js.Item,
+    ds: js.DataStructures,
+    system_command: str = "unk",
+    result="unk",
+    error_message="unk",
 ) -> None:
     restarting = item.qsub_tries < 5
     restarting_msg = " Restarting..." if restarting else "Too many restarts. Skipping..."
@@ -163,6 +162,7 @@ async def restart_or_drop(
     )
     if restarting:
         item.qsub_tries += 1
-        await qsub_queue.put(item)
+        await ds.qsub_queue.put(item)
     else:
+        await js.remove_from_monitored(item, ds.monitored_jobs)
         await js.set_db_errors([item])

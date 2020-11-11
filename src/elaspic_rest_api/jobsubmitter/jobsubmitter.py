@@ -1,40 +1,37 @@
 import asyncio
 import logging
-from asyncio import Queue
-from concurrent.futures import Executor, ThreadPoolExecutor
-from dataclasses import dataclass, field
-from typing import Dict, List, Mapping, Set, Tuple
+from concurrent.futures import ThreadPoolExecutor
+from typing import Dict, List, Set, Tuple
 
-from elaspic_rest_api import config
-from elaspic_rest_api import jobsubmitter
 from elaspic_rest_api import jobsubmitter as js
+from elaspic_rest_api.types import DataIn
 
 logger = logging.getLogger(__name__)
 executor = ThreadPoolExecutor()
 
 
-async def start_jobsubmitter(ds: js.DataStructures, executor: Executor) -> Dict[str, asyncio.Task]:
+async def start_jobsubmitter(ds: js.DataStructures) -> Dict[str, asyncio.Task]:
     loop = asyncio.get_running_loop()
+    executor = ThreadPoolExecutor()
 
     tasks = {}
-    tasks["update_precalculated"] = loop.create_task(
-        jobsubmitter.update_precalculated(ds.precalculated)
-    )
+    tasks["update_precalculated"] = loop.create_task(js.update_precalculated(ds.precalculated))
     tasks["persist_precalculated"] = loop.create_task(
-        jobsubmitter.persist_precalculated(ds.precalculated, ds.precalculated_cache)
+        js.persist_precalculated(ds.precalculated, ds.precalculated_cache)
     )
-    tasks["pre_qsub"] = loop.create_task(jobsubmitter.pre_qsub())
-    tasks["qsub"] = loop.create_task(jobsubmitter.qsub())
-    tasks["qstat"] = loop.create_task(jobsubmitter.qstat(ds.running_jobs))
-    tasks["validation"] = loop.create_task(jobsubmitter.validation())
+    tasks["pre_qsub"] = loop.create_task(js.pre_qsub(ds))
+    tasks["qsub"] = loop.create_task(js.qsub(ds))
+    tasks["qstat"] = loop.create_task(js.qstat(ds.running_jobs))
+    tasks["validation"] = loop.create_task(js.validation(ds))
     tasks["finalize_finished_jobs"] = loop.create_task(
-        jobsubmitter.finalize_finished_jobs(executor, ds.monitored_jobs)
+        js.finalize_finished_jobs(executor, ds.monitored_jobs)
     )
-    tasks["show_stats"] = loop.create_task(jobsubmitter.show_stats(ds))
+    tasks["show_stats"] = loop.create_task(js.show_stats(ds))
+
     return tasks
 
 
-async def main(data_in, ds: js.DataStructures):
+async def submit_job(data_in: DataIn, ds: js.DataStructures):
     """
     Parameters
     ----------
@@ -52,17 +49,18 @@ async def main(data_in, ds: js.DataStructures):
             - uniprot_domain_pair_ids  (database)
                 Comma-separated list of uniprot_domain_pair_id interfaces to analyse.
     """
+    logger.debug("")
     items_list = parse_input_data(data_in)
     for items in items_list:
         s, m, muts = items
 
         have_prereqs = True
         # Add sequence job
-        if not jobsubmitter.check_prereqs([s.unique_id], ds.precalculated, ds.precalculated_cache):
+        if not js.check_prereqs([s.unique_id], ds.precalculated, ds.precalculated_cache):
             await ds.qsub_queue.put(s)
             have_prereqs = False
         # Add model job
-        if not jobsubmitter.check_prereqs([m.unique_id], ds.precalculated, ds.precalculated_cache):
+        if not js.check_prereqs([m.unique_id], ds.precalculated, ds.precalculated_cache):
             await ds.qsub_queue.put(m)
             have_prereqs = False
         # Add mutation jobs
@@ -81,12 +79,13 @@ async def main(data_in, ds: js.DataStructures):
             ds.monitored_jobs.setdefault(job_key, set()).update(job_mutations)
 
 
-def parse_input_data(data_in: Dict) -> List[Tuple[js.Item, js.Item, Set[js.Item]]]:
+def parse_input_data(data_in: DataIn) -> List[Tuple[js.Item, js.Item, Set[js.Item]]]:
     items_list = []
-    for args in data_in.get("mutations", []):
-        args["job_id"] = data_in.get("job_id")
-        args["job_email"] = data_in.get("job_email")
-        args["job_type"] = data_in.get("job_type")
+    for data in data_in.mutations:
+        args: js.Args = data.dict()  # type: ignore
+        args["job_id"] = data_in.job_id
+        args["job_email"] = data_in.job_email
+        args["job_type"] = data_in.job_type
         validate_args(args)
         s = js.Item(run_type="sequence", args=args)
         m = js.Item(run_type="model", args=args)

@@ -14,7 +14,7 @@ from elaspic_rest_api import jobsubmitter as js
 logger = logging.getLogger(__name__)
 
 
-async def finalize_finished_jobs(executor: Executor, monitored_jobs: Dict[str, Set]):
+async def finalize_finished_jobs(executor: Executor, monitored_jobs: Dict[js.JobKey, Set]):
     while True:
         logger.debug("finalize_finished_jobs")
         logger.debug("monitored_jobs: %s", monitored_jobs)
@@ -55,11 +55,9 @@ async def set_job_status(job_id: str) -> int:
     return num_rows_affected
 
 
-async def finalize_lingering_jobs(
-    pre_qsub_queue: Queue, qsub_queue: Queue, validation_queue: Queue
-) -> None:
-    await set_db_errors(pre_qsub_queue)
-    await set_db_errors(qsub_queue)
-    await set_db_errors(validation_queue)
+async def finalize_lingering_jobs(ds: js.DataStructures) -> None:
+    await js.set_db_errors(ds.pre_qsub_queue)
+    await js.set_db_errors(ds.qsub_queue)
+    await js.set_db_errors(ds.validation_queue)
     system_command = f'bash -c "rm -f "{config.DATA_DIR}/locks/*/*.lock""'
     await asyncio.create_subprocess_exec(shlex.split(system_command))  # type: ignore
