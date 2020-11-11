@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 
-def read_md(file):
+def read_file(file):
     with open(file) as fin:
         return fin.read()
 
@@ -10,7 +10,8 @@ setup(
     name="elaspic-rest-api",
     version="0.1.0",
     description="ELASPIC REST API",
-    long_description=read_md("README.md"),
+    long_description=read_file("README.md"),
+    long_description_content_type="text/markdown",
     author="Alexey Strokach",
     author_email="alex.strokach@utoronto.ca",
     url="https://gitlab.com/elaspic/elaspic-rest-api",
