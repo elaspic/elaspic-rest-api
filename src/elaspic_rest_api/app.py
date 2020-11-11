@@ -1,95 +1,61 @@
-import sentry_sdk
-from sentry_sdk.integrations.aiohttp import AioHttpIntegration
-
-from elaspic_rest_api import config
-
-if config.SENTRY_DSN:
-    sentry_sdk.init(
-        dsn="https://75ac5bde64ba45669cdbc39700edf502@o60259.ingest.sentry.io/5511660",
-        integrations=[AioHttpIntegration()],
-    )
-
 import asyncio
 import logging
-import logging.config
+from typing import Any, Dict
 
-from aiohttp import web
+import sentry_sdk
+from fastapi import BackgroundTasks, FastAPI
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
-from elaspic_rest_api import config, jobsubmitter
+import elaspic_rest_api
+from elaspic_rest_api import config
+from elaspic_rest_api import jobsubmitter as js
+from elaspic_rest_api.types import DataIn
 
 logger = logging.getLogger(__name__)
 
+description = """\
+This page lists `ELASPIC` REST API endpoints that are available for evaluating the effect
+of mutations on protein stability and protein interaction affinity.s
+"""
 
-async def generic_handler(request, request_type):
-    """Handle GET and POST requests."""
-    logger.debug("%s request: %s", request_type, request)
+app = FastAPI(
+    title="ELASPIC REST API", description=description, version=elaspic_rest_api.__version__
+)
 
-    # Parse input
-    if request_type == "GET":
-        data_in = dict(request.GET)
-    elif request_type == "POST":
-        data_in = await request.json()
+js_data: Dict[str, Any] = {}
+
+
+@app.post("/", status_code=200)
+async def submit_job(data_in: DataIn, background_tasks: BackgroundTasks):
+    if data_in.secret_key == config.SECRET_KEY:
+        background_tasks.add_task(js.submit_job, data_in, js_data["ds"])
+        return {"status": "submitted"}
     else:
-        raise Exception("Wrong request_type: {}".format(request_type))
-    logger.debug("data_in: {}".format(data_in))
-
-    # Process input
-    if data_in and data_in.get("secret_key") == config.SECRET_KEY:
-        # Submit job
-        muts = asyncio.ensure_future(jobsubmitter.main(data_in))
-        logger.debug("muts: {}".format(muts))
-        data_out = {"status": "submitted"}
-    else:
-        # Invalid request
-        data_out = {"status": "error", "data_in": data_in}
-    logger.debug("data_out:\n%s", data_out)
-
-    # Response
-    resp = web.json_response(data_out, status=200)
-    logger.debug("resp:\n%s".resp)
-    return resp
+        return {"status": "restricted"}
 
 
-async def get(request):
-    return await generic_handler(request, "GET")
+@app.get("/_ah/warmup", include_in_schema=False)
+def warmup():
+    return {}
 
 
-async def post(request):
-    return await generic_handler(request, "POST")
+@app.on_event("startup")
+async def on_startup() -> None:
+    js_data["ds"] = js.DataStructures()
+    js_data["tasks"] = await js.start_jobsubmitter(js_data["ds"])
 
 
-async def start_background_tasks(app):
-    app["redis_listener"] = asyncio.create_task(listen_to_redis(app))
-
-
-async def cleanup_background_tasks(app):
-    for task in app["background_tasks"]:
+@app.on_event("shutdown")
+async def on_shutdown() -> None:
+    for task_name, task in js_data["tasks"].items():
         task.cancel()
         try:
             await task
         except asyncio.CancelledError:
             pass
-
-    loop = asyncio.get_event_loop()
-    data = app["background_data"]
-    loop.run_until_complete(
-        jobsubmitter.finalize_lingering_jobs(
-            data.pre_qsub_queue, data.qsub_queue, data.validation_queue
-        )
-    )
-
-    app["redis_listener"].cancel()
-    await app["redis_listener"]
+    await js.finalize_lingering_jobs(js_data["ds"])
 
 
-def main():
-    app = web.Application()
-    app.add_routes(
-        [
-            web.get("/elaspic/api/1.0/", get),
-            web.post("/elaspic/api/1.0/", post),
-        ]
-    )
-    app.on_startup.append(start_background_tasks)
-    app.on_cleanup.append(cleanup_background_tasks)
-    web.run_app(app)
+if config.SENTRY_DSN:
+    sentry_sdk.init(config.SENTRY_DSN, traces_sample_rate=1.0)
+    app = SentryAsgiMiddleware(app)  # type: ignore
