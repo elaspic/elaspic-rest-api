@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import shlex
-from asyncio import Queue
 from concurrent.futures import Executor
 from textwrap import dedent
 from typing import Dict, Set
