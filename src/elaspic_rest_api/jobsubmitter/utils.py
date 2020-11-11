@@ -15,8 +15,6 @@ async def set_db_errors(error_queue):
     logger.debug("set_db_errors: {}".format(error_queue))
 
     async def helper(cur, item):
-        remove_from_monitored_jobs(item)
-
         job_id = item.args["job_id"]
         protein_id = item.args["protein_id"]
         mut = item.args.get("mutations", "%")
@@ -51,7 +49,7 @@ async def set_db_errors(error_queue):
                 )
 
 
-def remove_from_monitored_jobs(item: js.Item, monitored_jobs: Dict):
+async def remove_from_monitored(item: js.Item, monitored_jobs: Dict):
     if item.args.get("webserver_job_id"):
         job_key = (item.args.get("webserver_job_id"), item.args.get("webserver_job_email"))
         logger.debug(
