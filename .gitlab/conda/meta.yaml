@@ -1,0 +1,26 @@
+package:
+  name: elaspic-rest-api
+  version: "0.1.0"
+
+source:
+  path: ../../
+
+build:
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
+  number: 0
+  noarch: python
+
+requirements:
+  build:
+    - python
+  run:
+    - python
+
+test:
+  imports:
+    - elaspic_rest_api
+
+about:
+  home: https://gitlab.com/elaspic/elaspic-rest-api
+  license: MIT License
+  summary: "ELASPIC REST API"

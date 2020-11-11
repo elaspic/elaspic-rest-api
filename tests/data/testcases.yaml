@@ -1,0 +1,45 @@
+- job_id: 1
+  job_type: database
+  mutations:
+  - mutations: G49V,G49A,G49L,G49I,G49C,G49M,G49F,G49W,G49P
+    protein_id: P21397
+    uniprot_domain_pair_ids: ''
+- job_id: 2
+  job_type: database
+  mutations:
+  - mutations: L526C
+    protein_id: O00522
+    uniprot_domain_pair_ids: ''
+- job_id: 3
+  job_type: database
+  mutations:
+  - mutations: Y138F,Y160F,Q226A,W241A,E134A,L229A,L143A,S269V,Y205A,L200A,A206G,V203A,D243A,F139A,F146A,Q190A,P95A,M247A,F197A,M100A,W236G,L184A,F153A,M144A,A253V,C104A,L179A,L155A,M120A,P219A,G202A,R168A,H141A,S221A,L174A,W158F,Q112A,D218A,T178A,G209V,G199A,G215V,L207A,C104V,I180A,G194V,L169A,M111A,S147A,R214A,T140A,I177A,G198V
+    protein_id: P09391
+    uniprot_domain_pair_ids: ''
+- job_id: 4
+  job_type: database
+  mutations:
+  - mutations: M407A,V136A
+    protein_id: Q8ZRU4
+    uniprot_domain_pair_ids: ''
+- job_id: 5
+  job_type: database
+  mutations:
+  - mutations: P355A,E246A,A415C
+    protein_id: Q8Z9H0
+    uniprot_domain_pair_ids: ''
+- job_id: 6
+  job_type: database
+  mutations:
+  - mutations: Y150A,F144A,W78A,Y76A,F72A,F191A,Y189A,G49A,W164A,Y64A,Y162A,W36A
+    protein_id: P0A910
+    uniprot_domain_pair_ids: ''
+- job_id: 7
+  job_type: database
+  mutations:
+  - mutations: A243R,Y234A,A230T,A230V,A230P,G232L,G232A,A230S,G232R
+    protein_id: P0A921
+    uniprot_domain_pair_ids: ''
+  - mutations: L140R,Y234L,A230W,A230R,A230Y,Y234R,A230Q,A243L,L140A
+    protein_id: P0A921
+    uniprot_domain_pair_ids: ''

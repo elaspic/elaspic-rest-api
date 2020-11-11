@@ -1,0 +1,10 @@
+FoldX 3.0 Beta 6.1 (2014)
+by the FoldX Consortium 
+Jesper Borg, Frederic Rousseau, Joost Schymkowitz,
+Luis Serrano and Francois Stricher
+------------------------------------------------------
+
+PDB file analysed: RepairPDB_inputA_0-INPUTA.pdb
+Output type: BuildModel
+Pdb	SD	total energy	Backbone Hbond	Sidechain Hbond	Van der Waals	Electrostatics	Solvation Polar	Solvation Hydrophobic	Van der Waals clashes	entropy sidechain	entropy mainchain	sloop_entropy	mloop_entropy	cis_bond	torsional clash	backbone clash	helix dipole	water bridge	disulfide	electrostatic kon	partial covalent bonds	energy Ionisation	Entropy Complex
+RepairPDB_inputA_0-INPUTA_1	0	-1.54403	0.251744	-0.386057	-0.847059	0.0775151	0.366242	-1.41623	-0.0802869	0.0601519	0.280043	0	0	0	0.127146	0.30686	0.0227561	0	0	0	0	4.26326e-14	0

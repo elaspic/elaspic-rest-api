@@ -1,0 +1,1 @@
+{"norm_dope": 0.567847569186601, "pir_alignment_file": "model/inputA_0-INPUTA.pir", "alignment_stats": [[1.0, 1.0, 1.0]], "model_domain_defs": [[1, 393]], "model_file": "model/inputA_0-INPUTA.pdb", "domain_def_offsets": [[0, 0]], "raw_model_file": "model/modeller/inputA_0.B99990001.pdb", "alignment_files": ["model/inputA_0-INPUTAA.aln"]}
