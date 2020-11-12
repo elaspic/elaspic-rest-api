@@ -1,0 +1,33 @@
+#!/bin/bash -il
+
+# Copied from: https://github.com/conda-forge/docker-images/blob/master/scripts/entrypoint
+
+# Use non-interactive cp
+# unalias cp
+
+# Create conda user with the same uid as the host, so the container can write
+# to mounted volumes
+# Adapted from https://denibertovic.com/posts/handling-permissions-with-docker-volumes/
+USER_ID=${HOST_USER_ID:-9001}
+useradd --shell /bin/bash -u $USER_ID -G lucky -o -c "" -m jobsubmitter
+export HOME=/home/jobsubmitter
+export USER=jobsubmitter
+export LOGNAME=jobsubmitter
+export MAIL=/var/spool/mail/jobsubmitter
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/jobsubmitter/bin
+export supkg="su-exec"
+chown jobsubmitter:jobsubmitter $HOME
+cp -R /etc/skel $HOME && chown -R conda:conda $HOME/skel && (ls -A1 $HOME/skel | xargs -I {} mv -n $HOME/skel/{} $HOME) && rm -Rf $HOME/skel
+
+# cp /root/.condarc $HOME/.condarc && chown conda:conda $HOME/.condarc
+cd $HOME
+
+# Activate the `base` conda environment.
+source /opt/conda/etc/profile.d/conda.sh
+conda activate base
+
+# Copy script files
+python -m elaspic_rest_api --log-level debug copy-scripts
+
+# Run whatever the user wants.
+exec /opt/conda/bin/$supkg jobsubmitter "$@"
