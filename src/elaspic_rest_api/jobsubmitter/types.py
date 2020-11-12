@@ -18,13 +18,16 @@ class DataStructures:
     pre_qsub_queue: Queue = field(default_factory=Queue)
     qsub_queue: Queue = field(default_factory=Queue)
     validation_queue: Queue = field(default_factory=Queue)
+    elaspic2_pending_queue: Queue = field(default_factory=Queue)
+    elaspic2_running_queue: Queue = field(default_factory=Queue)
 
     #: Mutation jobs that are being monitored for completion
     #: {(job_id, job_email): {unique_id_1, unique_id_2, ...}}
     #: Example: {JobKey(job_id=7, job_email=None): {"database.mutations.P0A921.A243R", ...}}
     monitored_jobs: Dict[JobKey, Set] = field(default_factory=dict)
 
-    running_jobs: Set = field(default_factory=set)
+    #: SLURM job ids of all running jobs
+    running_jobs: Set[int] = field(default_factory=set)
 
     #: Persisted precalculated data
     #: Mapping from `unique_id` to `job_id`
@@ -38,8 +41,9 @@ class DataStructures:
 
 
 class Args(TypedDict):
-    job_type: str
     job_id: int
+    #: One of ["database", "local"]
+    job_type: str
     job_email: Optional[str]
     protein_id: str
     mutations: str
@@ -51,6 +55,9 @@ class Args(TypedDict):
 
 
 class Item:
+    #: SLURM job id of the currently-running job
+    job_id: Optional[int]
+
     def __init__(self, run_type: str, args: Args) -> None:
         assert run_type in ["sequence", "model", "mutations"]
         self.run_type = run_type
@@ -58,7 +65,6 @@ class Item:
         self.init_time = time.time()
         #
         self.qsub_tries = 0
-        self.validation_tries = 0
         self.unique_id = get_unique_id(run_type, args)
         self.lock_path = get_lock_path(run_type, args, finished=False)
         self.finished_lock_path = get_lock_path(run_type, args, finished=True)

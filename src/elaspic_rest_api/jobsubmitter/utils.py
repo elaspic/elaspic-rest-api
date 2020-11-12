@@ -1,14 +1,49 @@
 import logging
+import time
 from asyncio import Queue
 from textwrap import dedent
 from typing import Dict
 
-import aiomysql
+import aiofiles
 
-from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
 
 logger = logging.getLogger(__name__)
+
+
+async def restart_or_drop(
+    item: js.Item,
+    ds: js.DataStructures,
+    system_command: str = "unk",
+    result="unk",
+    error_message="unk",
+) -> None:
+    restarting = item.qsub_tries < 5 and abs(time.time() - item.start_time) < js.perf.JOB_TIMEOUT
+    logger.error(
+        (
+            "Error runing job '%s'. Num squb retries: %s. "
+            "System command: '%s'. Result: %s. Error message: %s. Restarting: %s."
+        ),
+        item.unique_id,
+        item.qsub_tries,
+        system_command,
+        result,
+        error_message,
+        "Restarting..." if restarting else "Too many restarts. Skipping...",
+    )
+    js.email.send_admin_email(item, system_command, restarting)
+
+    try:
+        await aiofiles.os.remove(item.lock_path)
+    except FileNotFoundError:
+        pass
+
+    if restarting:
+        item.qsub_tries += 1
+        await ds.qsub_queue.put(item)
+    else:
+        await remove_from_monitored(item, ds.monitored_jobs)
+        await set_db_errors([item])
 
 
 async def set_db_errors(error_queue):
@@ -31,7 +66,7 @@ async def set_db_errors(error_queue):
         )
         await cur.execute(db_command, (job_id, protein_id, mut))
 
-    async with aiomysql.connect(db=config.DB_NAME_WEBSERVER, **config.DB_CONNECTION_PARAMS) as conn:
+    async with js.WDBConnection() as conn:
         async with conn.cursor() as cur:
             try:
                 if isinstance(error_queue, Queue):

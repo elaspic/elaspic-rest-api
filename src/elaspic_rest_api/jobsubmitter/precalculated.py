@@ -3,8 +3,6 @@ import logging
 from collections import deque
 from typing import Dict
 
-import aiomysql
-
 from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
 
@@ -26,7 +24,7 @@ def check_prereqs(
 
 
 async def update_precalculated(precalculated: Dict) -> None:
-    async with aiomysql.connect(db=config.DB_NAME_ELASPIC, **config.DB_CONNECTION_PARAMS) as conn:
+    async with js.EDBConnection() as conn:
         async with conn.cursor() as cur:
             await cur.execute("SELECT id, job_id from jobsubmitter_cache;")
             values = await cur.fetchall()
@@ -41,9 +39,7 @@ async def persist_precalculated(precalculated: Dict, precalculated_cache: Dict) 
             await asyncio.sleep(js.perf.SLEEP_FOR_DB)
             continue
         try:
-            async with aiomysql.connect(
-                db=config.DB_NAME_ELASPIC, **config.DB_CONNECTION_PARAMS
-            ) as conn:
+            async with js.EDBConnection() as conn :
                 async with conn.cursor() as cur:
                     await cur.executemany(
                         "INSERT INTO jobsubmitter_cache (id, job_id) values (%s,%s) "

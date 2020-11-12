@@ -1,9 +1,10 @@
 import asyncio
 import logging
-import os
 import shlex
 import time
-from typing import Set
+from typing import Set, Tuple
+
+import aiofiles
 
 from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
@@ -72,51 +73,39 @@ async def validation(ds: js.DataStructures):
                 continue
             #
             validation_passphrase = "Finished successfully"
-            system_command = 'grep "{}" {}'.format(validation_passphrase, item.stdout_path)
-            logger.debug(system_command)
-            proc = await asyncio.create_subprocess_exec(
-                *shlex.split(system_command),
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+            validated, system_command, result, error_message = await _validate_finished_item(
+                item, validation_passphrase
             )
-            result_bytes, error_message_bytes = await proc.communicate()
-            result = result_bytes.decode()
-            error_message = error_message_bytes.decode()
-            validated = validation_passphrase in result
-            logger.debug("validated: {}".format(validated))
-            if validated:
-                if item.run_type in ["sequence", "model"]:
-                    logger.debug("Adding finished job {} to cache...".format(item.job_id))
-                    ds.precalculated_cache[item.unique_id] = item.job_id
-                    logger.debug("precalculated_cache: {}".format(ds.precalculated_cache))
-                message = "Making sure the lock file '{}' has been removed... ".format(
-                    item.lock_path
-                )
-                try:
-                    os.remove(item.lock_path)
-                    logger.debug(message + "nope!")
-                except FileNotFoundError:
-                    logger.debug(message + "yup!")
-                js.remove_from_monitored(item, ds.monitored_jobs)
+            if not validated:
+                await js.restart_or_drop(item, ds, system_command, result, error_message)
+                continue
+            try:
+                await aiofiles.os.remove(item.lock_path)
+                logger.debug("Removed lock file for finished job %s.", item.job_id)
+            except FileNotFoundError:
+                logger.debug("Failed to remove lock file for finished job %s.", item.job_id)
+            if item.run_type in ["sequence", "model"]:
+                ds.precalculated_cache[item.unique_id] = item.job_id
+                logger.debug("Added finished job %s to cache.", item.job_id)
+            elif item.run_type in ["mutations"]:
+                await ds.elaspic2_pending_queue.put(item)
             else:
-                error_message = "Failed to validate with system command:\n{}".format(system_command)
-                restarting = (item.validation_tries < 5) & (
-                    abs(time.time() - item.start_time) < js.perf.JOB_TIMEOUT
-                )
-                js.email.send_admin_email(item, system_command, restarting)
-                logger.debug("Removing the lock file...")
-                try:
-                    os.remove(item.lock_path)
-                    logger.debug("nope!")
-                except FileNotFoundError:
-                    logger.debug("yup!")
-                if restarting:
-                    logger.error(error_message + " Restarting...")
-                    item.validation_tries += 1
-                    await ds.qsub_queue.put(item)
-                else:
-                    logger.error(error_message + " Out of time. Skipping...")
-                    await js.remove_from_monitored(item, ds.monitored_jobs)
-                    await js.set_db_errors([item])
+                raise Exception(f"Invalid run type: {item.run_type}.")
             await asyncio.sleep(js.perf.SLEEP_FOR_LOOP)
         await asyncio.sleep(js.perf.SLEEP_FOR_QSTAT)
+
+
+async def _validate_finished_item(
+    item: js.Item, validation_passphrase: str
+) -> Tuple[bool, str, str, str]:
+    system_command = 'grep "{}" {}'.format(validation_passphrase, item.stdout_path)
+    proc = await asyncio.create_subprocess_exec(
+        *shlex.split(system_command),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    result_bytes, error_message_bytes = await proc.communicate()
+    result = result_bytes.decode()
+    error_message = error_message_bytes.decode()
+    validated = validation_passphrase in result
+    return validated, system_command, result, error_message

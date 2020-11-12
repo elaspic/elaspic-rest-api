@@ -5,8 +5,6 @@ from concurrent.futures import Executor
 from textwrap import dedent
 from typing import Dict, Set
 
-import aiomysql
-
 from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
 
@@ -40,7 +38,7 @@ async def set_job_status(job_id: str) -> int:
     """
     Copy-paste from web_pipeline.functions, so that I don't have to laod all database models.
     """
-    async with aiomysql.connect(db=config.DB_NAME_WEBSERVER, **config.DB_CONNECTION_PARAMS) as conn:
+    async with js.WDBConnection() as conn:
         async with conn.cursor() as cur:
             db_command = dedent(
                 """\

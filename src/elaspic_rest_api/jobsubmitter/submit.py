@@ -71,8 +71,8 @@ def create_qsub_system_command(item: js.Item) -> str:
 async def pre_qsub(ds: js.DataStructures) -> None:
     """Wait while the sequence and model prerequisites are being calculated."""
     while True:
+        logger.debug("pre_qsub")
         for _ in range(ds.pre_qsub_queue.qsize()):
-            logger.debug("pre_qsub")
             item = await ds.pre_qsub_queue.get()
             have_prereqs = js.check_prereqs(item.prereqs, ds.precalculated, ds.precalculated_cache)
             if not have_prereqs:
@@ -121,48 +121,19 @@ async def qsub(ds: js.DataStructures) -> None:
             logger.debug("job_id: %s", job_ids)
 
             if not job_ids:
-                restart_or_drop(item, ds.qsub_queue, system_command, result, error_message)
+                js.restart_or_drop(item, ds.qsub_queue, system_command, result, error_message)
                 continue
 
             try:
                 job_id = job_ids[0]
             except ValueError:
-                restart_or_drop(item, ds.qsub_queue, system_command, result, error_message)
+                js.restart_or_drop(item, ds.qsub_queue, system_command, result, error_message)
                 continue
 
             item.set_job_id(job_id)
             await ds.validation_queue.put(item)
         except Exception as e:
-            try:
-                os.remove(item.lock_path)
-            except FileNotFoundError:
-                pass
+            js.restart_or_drop(item, ds.qsub_queue, error_message=str(e))
             await asyncio.sleep(js.perf.SLEEP_FOR_ERROR)
-            restart_or_drop(item, ds.qsub_queue, error_message=str(e))
-        #
+
         await asyncio.sleep(js.perf.SLEEP_FOR_QSUB)
-
-
-async def restart_or_drop(
-    item: js.Item,
-    ds: js.DataStructures,
-    system_command: str = "unk",
-    result="unk",
-    error_message="unk",
-) -> None:
-    restarting = item.qsub_tries < 5
-    restarting_msg = " Restarting..." if restarting else "Too many restarts. Skipping..."
-    logger.error(
-        "Submitting job with system command '%s' produced no job id and the following "
-        "results: '%s' and error: '%s'. %s",
-        system_command,
-        result,
-        error_message,
-        restarting_msg,
-    )
-    if restarting:
-        item.qsub_tries += 1
-        await ds.qsub_queue.put(item)
-    else:
-        await js.remove_from_monitored(item, ds.monitored_jobs)
-        await js.set_db_errors([item])
