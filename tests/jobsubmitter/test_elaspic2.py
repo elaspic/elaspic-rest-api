@@ -27,7 +27,12 @@ async def test_query_mutation_data_local():
 async def test_query_mutation_data_database():
     item = js.Item(
         run_type="mutations",
-        args={"job_id": 1, "job_type": "database", "protein_id": "A0AV96", "mutations": "V274M"},
+        args={
+            "job_id": "4a21dd",
+            "job_type": "database",
+            "protein_id": "O00522",
+            "mutations": "E567Q",
+        },
     )
     mutation_info_list = await js.elaspic2.query_mutation_data(item)
     assert len(mutation_info_list) >= 2

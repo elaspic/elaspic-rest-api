@@ -6,7 +6,6 @@ from kmbio import PDB
 
 from elaspic_rest_api import jobsubmitter as js
 
-
 core_mutation_local_sql = """\
 select model_filename_wt, chain_modeller, mutation_modeller
 from elaspic_core_mutation_local
@@ -43,9 +42,13 @@ class COI(Enum):
 
 class MutationInfo(NamedTuple):
     structure_file: str
-    chain: str
+    chain_id: str
     mutation: str
     coi: COI
+
+
+class EL2Error(Exception):
+    pass
 
 
 async def elaspic2(ds: js.DataStructures) -> None:
@@ -88,18 +91,30 @@ async def query_mutation_data(item: js.Item) -> List[MutationInfo]:
     return mutation_values
 
 
-def extract_protein_info(structure_file: str, chain: str, mutation: str, coi: COI) -> Dict:
+def extract_protein_info(mutation_info: MutationInfo, remove_hetatms=True) -> Dict:
     structure = PDB.load(structure_file)
+    unknown_residue_marker = "" if remove_hetatms else "X"
 
-    out = {
-        "protein_structure_url": "https://files.rcsb.org/download/1MFG.pdb",
-        "protein_sequence": (
-            "GSMEIRVRVEKDPELGFSISGGVGGRGNPFRPDDDGIFVTRVQPEGPASKLLQPGDKIIQANGYSFINI"
-            "EHGQAVSLLKTFQNTVELIIVREVSS"
-        ),
-        "mutations": "G1A,G1C",
-        "ligand_sequence": "EYLGLDVPV",
+    protein_sequence = None
+    ligand_sequence = None
+    for chain in structure.chains:
+        chain_sequence = structure_tools.get_chain_sequence(
+            chain, if_unknown="replace", unknown_residue_marker=unknown_residue_marker
+        )
+        if chain.id == mutation_info.chain_id:
+            protein_sequence = chain_sequence
+        elif mutation_info.coi == COI.INTERFACE and ligand_sequence is None and chain_sequence:
+            ligand_sequence = chain_sequence
+
+    result = {
+        "protein_structure_url": "",
+        "protein_sequence": protein_sequence,
+        "mutations": mutation_info.mutation,
     }
+
+    if mutation_info.coi == COI.INTERFACE:
+        result["ligand_sequence"] = ligand_sequence
+    return result
 
 
 def get_protein_info_local(item: js.Item):
