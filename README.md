@@ -9,5 +9,5 @@
 
 ```bash
 uvicorn elaspic_rest_api.app:app --host 0.0.0.0 --port 8000 --reload \
-    --log-level=debug --log-config logconfig.ini --env-file .env
+    --log-level=debug --log-config .gitlab/docker/logconfig.ini --env-file .env
 ```
