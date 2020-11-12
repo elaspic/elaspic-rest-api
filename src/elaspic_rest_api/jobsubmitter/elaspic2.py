@@ -1,6 +1,7 @@
-from enum import Enum
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import aiohttp
 from kmbio import PDB
@@ -8,101 +9,104 @@ from kmtools import structure_tools
 
 from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
-
-core_mutation_local_sql = """\
-select model_filename_wt, chain_modeller, mutation_modeller
-from elaspic_core_mutation_local
-where protein_id = %(protein_id)s and mutation = %(mutation)s;
-"""
-
-interface_mutation_local_sql = """\
-select model_filename_wt, chain_modeller, mutation_modeller
-from elaspic_interface_mutation_local
-where protein_id = %(protein_id)s and mutation = %(mutation)s;
-"""
-
-core_mutation_database_sql = """\
-SELECT CONCAT(m.path_to_data, mut.model_filename_wt) as model_filename_wt,
-mut.chain_modeller, mut.mutation_modeller
-FROM elaspic_core_mutation mut
-JOIN elaspic_core_model m USING (protein_id, domain_id)
-WHERE protein_id = %(protein_id)s AND mutation = %(mutation)s;
-"""
-
-interface_mutation_database_sql = """\
-SELECT CONCAT(m.path_to_data, mut.model_filename_wt) as model_filename_wt,
-mut.chain_modeller, mut.mutation_modeller
-FROM elaspic_interface_mutation mut
-JOIN elaspic_interface_model m USING (interface_id)
-WHERE protein_id = %(protein_id)s AND mutation = %(mutation)s;
-"""
+from elaspic_rest_api.jobsubmitter.elaspic2db import get_mutation_info, update_mutation_scores
+from elaspic_rest_api.jobsubmitter.elaspic2types import COI, EL2Error, MutationInfo, MutationScores
 
 
-class COI(Enum):
-    CORE = "core"
-    INTERFACE = "interface"
+async def elaspic2_submit_loop(ds: js.DataStructures) -> None:
+    elaspic2_jobs_api = "https://elaspic.uc.r.appspot.com/jobs/"
+    loop = asyncio.get_running_loop()
+    executor = ProcessPoolExecutor(1)
 
-
-class MutationInfo(NamedTuple):
-    structure_file: str
-    chain_id: str
-    mutation: str
-    coi: COI
-
-
-class EL2Error(Exception):
-    pass
-
-
-async def elaspic2(ds: js.DataStructures) -> None:
     async with aiohttp.ClientSession() as session:
         while True:
             item = await ds.elaspic2_pending_queue.get()
-            async with session.post(url, json={"test": "object"}):
-                pass
+            mutation_info_list = await get_mutation_info(item)
+            mutation_info_list = await loop.run_in_executor(
+                None, resolve_mutation_info, mutation_info_list
+            )
+            protein_info_list = await loop.run_in_executor(
+                executor, extract_protein_info_list, mutation_info_list
+            )
 
-            # Fun stuff
-            js.remove_from_monitored(item, ds.monitored_jobs)
+            item.el2_mutation_info_list = []
+            for mutation_info, protein_info in zip(mutation_info_list, protein_info_list):
+                async with session.post(elaspic2_jobs_api, json=protein_info) as resp:
+                    job_request = await resp.json()
+                mutation_info = mutation_info._replace(el2_web_url=job_request["web_url"])
+                item.el2_mutation_info_list.append(mutation_info)
+            await ds.elaspic2_running_queue.put(item)
 
 
-async def query_mutation_data(item: js.Item) -> List[MutationInfo]:
-    args = item.args
-    kwargs = {"protein_id": args["protein_id"], "mutation": args["mutations"]}
-    assert "," not in kwargs["mutation"]
+async def elaspic2_collect_loop(ds: js.DataStructures) -> None:
+    async with aiohttp.ClientSession() as session:
+        while True:
+            await asyncio.sleep(30)
+            for _ in range(ds.elaspic2_running_queue.qsize()):
+                item = await ds.elaspic2_running_queue.get()
 
-    if args["job_type"] == "database":
-        core_mutation_sql = core_mutation_database_sql
-        interface_mutation_sql = interface_mutation_database_sql
+                mutation_scores = []
+                is_finished = True
+                for mutation_info in item.el2_mutation_info_list:
+                    async with session.get(mutation_info.el2_web_url) as resp:
+                        job_status = await resp.json()
+                    if job_status["status"] not in ["error", "success"]:
+                        is_finished = False
+                        break
+                    async with session.get(job_status["web_url"]) as resp:
+                        job_result = await resp.json()
+                    mutation_score = job_result_to_mutation_scores(job_result, mutation_info.coi)
+                    mutation_scores.append(mutation_score)
+
+                if not is_finished:
+                    await ds.elaspic2_running_queue.put(item)
+                    continue
+
+                for mutation_info in item.el2_mutation_info_list:
+                    await session.delete(mutation_info.el2_web_url)
+
+                await update_mutation_scores(item, mutation_scores)
+                await js.finalize_mutation(item)
+                await js.remove_from_monitored(item, ds.monitored_jobs)
+
+
+def job_result_to_mutation_scores(job_result: Dict, coi: COI) -> MutationScores:
+    if coi == COI.CORE:
+        mutation_score = MutationScores(
+            protbert_score=job_result["protbert_core"],
+            proteinsolver_score=job_result["proteinsolver_core"],
+            el2_score=job_result["el2core"],
+        )
     else:
-        assert args["job_type"] == "local"
-        core_mutation_sql = core_mutation_local_sql
-        interface_mutation_sql = interface_mutation_local_sql
+        mutation_score = MutationScores(
+            protbert_score=job_result["protbert_interface"],
+            proteinsolver_score=job_result["proteinsolver_interface"],
+            el2_score=job_result["el2interface"],
+        )
+    return mutation_score
 
-    async with js.WDBConnection() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute(core_mutation_sql, kwargs)
-            core_mutation_values: List[Tuple[str, str, str]] = await cur.fetchall()
 
-            await cur.execute(interface_mutation_sql, kwargs)
-            interface_mutation_values: List[Tuple[str, str, str]] = await cur.fetchall()
-
+def resolve_mutation_info(mutation_info_list: List[MutationInfo]) -> List[MutationInfo]:
     data_dir = Path(config.DATA_DIR)
-    mutation_values = (
-        #
-        [
-            MutationInfo(data_dir.joinpath(v[0]).resolve().as_posix(), v[1], v[2], COI.CORE)
-            for v in core_mutation_values
-        ]
-        + [
-            MutationInfo(data_dir.joinpath(v[0]).resolve().as_posix(), v[1], v[2], COI.INTERFACE)
-            for v in interface_mutation_values
-        ]
-    )
-    return mutation_values
+    mutation_info_list_resolved = []
+    for mutation_info in mutation_info_list:
+        mutation_info = mutation_info._replace(
+            structure_file=data_dir.joinpath(mutation_info.structure_file).resolve().as_posix()
+        )
+        mutation_info_list_resolved.append(mutation_info)
+    return mutation_info_list_resolved
+
+
+def extract_protein_info_list(mutation_info_list: List[MutationInfo]) -> List[Dict]:
+    protein_info_list = []
+    for mutation_info in mutation_info_list:
+        protein_info = extract_protein_info(mutation_info)
+        protein_info_list.append(protein_info)
+    return protein_info_list
 
 
 def extract_protein_info(mutation_info: MutationInfo) -> Dict:
-    structure_file = Path(config.DATA_DIR).joinpath(mutation_info.structure_file)
+    structure_file = Path(mutation_info.structure_file)
 
     if not structure_file.is_file():
         raise EL2Error(f"Could not find structure for mutation: {mutation_info}.")
@@ -151,15 +155,3 @@ def _extract_chain_sequences(
         elif coi == COI.INTERFACE and ligand_sequence is None and chain_sequence:
             ligand_sequence = chain_sequence
     return protein_sequence, ligand_sequence
-
-
-def get_protein_info_local(item: js.Item):
-    pass
-
-
-def get_protein_info_database(item: js.Item):
-    pass
-
-
-def finalize_mutation_local(item: js.Item):
-    pass

@@ -2,9 +2,10 @@ import os.path as op
 import time
 from asyncio import Queue
 from dataclasses import dataclass, field
-from typing import Dict, NamedTuple, Optional, Set, TypedDict
+from typing import Dict, List, NamedTuple, Optional, Set, TypedDict
 
 from elaspic_rest_api import config
+from elaspic_rest_api.jobsubmitter.elaspic2types import MutationInfo
 
 
 class JobKey(NamedTuple):
@@ -78,6 +79,8 @@ class Item:
         self.job_id = None
         self.stdout_path = None  # need_job_id
         self.stderr_path = None  # need job_id
+        # ELASPIC2
+        self.el2_mutation_info_list: List[MutationInfo] = []
 
     def set_job_id(self, job_id):
         self.job_id = job_id
