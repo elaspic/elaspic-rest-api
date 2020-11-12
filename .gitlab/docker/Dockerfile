@@ -2,7 +2,7 @@
 FROM ubuntu:20.04
 
 ARG PACKAGE_NAME=elaspic-rest-api
-ARG PACKAGE_VERSION=master
+ARG PACKAGE_VERSION=v0.1.0
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -32,7 +32,7 @@ RUN mkdir -p /opt/docker/bin \
     && source /opt/conda/etc/profile.d/conda.sh \
     && conda activate base \
     && conda install -yq -c conda-forge -c defaults tini su-exec \
-    && python -m pip install https://gitlab.com/elaspic/${PACKAGE_NAME}/-/archive/master/${PACKAGE_NAME}-${PACKAGE_VERSION}.zip \
+    && python -m pip install https://gitlab.com/elaspic/${PACKAGE_NAME}/-/archive/${PACKAGE_VERSION}/${PACKAGE_NAME}-${PACKAGE_VERSION}.zip \
     && conda clean -tipy \
     && chgrp -R lucky /opt/conda \
     && chmod -R g=u /opt/conda
@@ -47,6 +47,5 @@ COPY entrypoint /opt/docker/bin/entrypoint
 ENTRYPOINT [ "/opt/conda/bin/tini", "--", "/opt/docker/bin/entrypoint" ]
 
 # During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
-CMD [ "gunicorn", "elaspic_rest_api.app:app", "--bind", "0.0.0.0:${PORT}", \
-    "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", \
+CMD [ "gunicorn", "elaspic_rest_api.app:app", "--worker-class", "uvicorn.workers.UvicornWorker", \
     "--log-config", "/opt/conda/share/logconfig.ini", "--access-logfile", "-" ]

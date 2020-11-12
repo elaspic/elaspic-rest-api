@@ -22,12 +22,18 @@ cp -R /etc/skel $HOME && chown -R jobsubmitter:jobsubmitter $HOME/skel && (ls -A
 # cp /root/.condarc $HOME/.condarc && chown conda:conda $HOME/.condarc
 cd $HOME
 
+# Add ssh key
+mkdir -p $HOME/.ssh && chmod 700 $HOME/.ssh
+echo "$KNOWN_HOSTS" >> $HOME/.ssh/known_hosts && chmod 644 $HOME/.ssh/known_hosts
+echo "$SSH_PRIVATE_KEY" | tr -d '\r' | sed 's/\\n/\n/g' > $HOME/.ssh/id_ed25519 && chmod 600 $HOME/.ssh/id_ed25519
+chown jobsubmitter:jobsubmitter -R $HOME/.ssh
+
 # Activate the `base` conda environment.
 source /opt/conda/etc/profile.d/conda.sh
 conda activate base
 
 # Copy script files
-python -m elaspic_rest_api --log-level debug copy-scripts
+/opt/conda/bin/$supkg jobsubmitter python -m elaspic_rest_api --log-level debug copy-scripts
 
 # Run whatever the user wants.
 exec /opt/conda/bin/$supkg jobsubmitter "$@"
