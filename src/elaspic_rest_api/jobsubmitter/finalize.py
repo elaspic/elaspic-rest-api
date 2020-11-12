@@ -1,8 +1,6 @@
 import asyncio
 import logging
 import shlex
-from concurrent.futures import Executor
-from textwrap import dedent
 from typing import Dict, Set
 
 from elaspic_rest_api import config
@@ -11,9 +9,71 @@ from elaspic_rest_api import jobsubmitter as js
 logger = logging.getLogger(__name__)
 
 
-async def finalize_finished_jobs(executor: Executor, monitored_jobs: Dict[js.JobKey, Set]):
+FINALIZE_SUBMISSION_SQL = """\
+UPDATE jobs
+SET isDone = 1, dateFinished = now()
+WHERE jobID = %s;
+"""
+
+FINALIZE_MUTATION_SQL = """\
+LOCK TABLES muts AS web_muts WRITE,
+            elaspic_core_mutation AS ecm READ,
+            elaspic_core_mutation_local AS ecml READ,
+            elaspic_interface_mutation AS eim READ,
+            elaspic_interface_mutation_local eiml READ;
+
+UPDATE muts web_muts
+LEFT JOIN elaspic_core_mutation ecm ON (
+    web_muts.protein = ecm.protein_id and web_muts.mut = ecm.mutation)
+LEFT JOIN elaspic_core_mutation_local ecml ON (
+    web_muts.protein = ecml.protein_id and web_muts.mut = ecml.mutation)
+SET web_muts.affectedType='CO', web_muts.status='error', web_muts.dateFinished = now(),
+    web_muts.error='1: ddG not calculated'
+WHERE web_muts.protein = %(protein_id)s and web_muts.mut = %(mutation)s AND
+      ecm.ddg IS NULL AND ecml.ddg IS NULL;
+
+UPDATE muts web_muts
+LEFT JOIN elaspic_core_mutation ecm ON (
+    web_muts.protein = ecm.protein_id and web_muts.mut = ecm.mutation)
+LEFT JOIN elaspic_core_mutation_local ecml ON (
+    web_muts.protein = ecml.protein_id and web_muts.mut = ecml.mutation)
+SET web_muts.affectedType='CO', web_muts.status='done', web_muts.dateFinished = now(),
+    web_muts.error=Null
+WHERE web_muts.protein = %(protein_id)s and web_muts.mut = %(mutation)s AND
+    (ecm.ddg IS NOT NULL OR ecml.ddg IS NOT NULL);
+
+UPDATE muts web_muts
+LEFT JOIN elaspic_interface_mutation eim ON (
+    web_muts.protein = eim.protein_id and web_muts.mut = eim.mutation)
+LEFT JOIN elaspic_interface_mutation_local eiml ON (
+    web_muts.protein = eiml.protein_id and web_muts.mut = eiml.mutation)
+SET web_muts.affectedType='IN', web_muts.status='done', web_muts.dateFinished = now(),
+    web_muts.error=Null
+WHERE web_muts.protein = %(protein_id)s and web_muts.mut = %(mutation)s AND
+    (eim.ddg IS NOT NULL OR eiml.ddg IS NOT NULL);
+
+UNLOCK TABLES;
+"""
+
+
+async def finalize_mutation(item: js.Item):
+    args = item.args
+    async with js.WDBConnection() as conn:
+        with conn.cursor() as cur:
+            for mutation in args["mutations"].split(","):
+                # Local pipelines may have underscore in mutation
+                if "_" in mutation:
+                    mutation = mutation.split("_")[-1]
+                cur.execute(
+                    FINALIZE_MUTATION_SQL, {"protein_id": args["protein_id"], "mutation": mutation}
+                )
+        conn.commit()
+
+
+async def finalize_finished_submissions(monitored_jobs: Dict[js.JobKey, Set]):
+    loop = asyncio.get_running_loop()
     while True:
-        logger.debug("finalize_finished_jobs")
+        logger.debug("finalize_finished_submissions")
         logger.debug("monitored_jobs: %s", monitored_jobs)
         if monitored_jobs:
             finished_jobs = []
@@ -23,7 +83,7 @@ async def finalize_finished_jobs(executor: Executor, monitored_jobs: Dict[js.Job
                         "monitored_jobs with key '%s' is empty, finalizing...", monitored_jobs
                     )
                     if job_key[1]:  # job email was specified
-                        executor.submit(
+                        loop.run_in_executor(
                             js.email.send_job_finished_email, job_key[0], job_key[1], "complete"
                         )
                     await set_job_status(job_key[0])
@@ -40,14 +100,7 @@ async def set_job_status(job_id: str) -> int:
     """
     async with js.WDBConnection() as conn:
         async with conn.cursor() as cur:
-            db_command = dedent(
-                """\
-                UPDATE jobs
-                SET isDone = 1, dateFinished = now()
-                WHERE jobID = %s;
-                """
-            )
-            num_rows_affected = await cur.execute(db_command, (job_id,))
+            num_rows_affected = await cur.execute(FINALIZE_SUBMISSION_SQL, (job_id,))
         await conn.commit()
     return num_rows_affected
 

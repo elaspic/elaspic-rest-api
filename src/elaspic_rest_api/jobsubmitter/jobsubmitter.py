@@ -12,7 +12,6 @@ executor = ThreadPoolExecutor()
 
 async def start_jobsubmitter(ds: js.DataStructures) -> Dict[str, asyncio.Task]:
     loop = asyncio.get_running_loop()
-    executor = ThreadPoolExecutor()
 
     tasks = {}
     tasks["update_precalculated"] = loop.create_task(js.update_precalculated(ds.precalculated))
@@ -23,8 +22,8 @@ async def start_jobsubmitter(ds: js.DataStructures) -> Dict[str, asyncio.Task]:
     tasks["qsub"] = loop.create_task(js.qsub(ds))
     tasks["qstat"] = loop.create_task(js.qstat(ds.running_jobs))
     tasks["validation"] = loop.create_task(js.validation(ds))
-    tasks["finalize_finished_jobs"] = loop.create_task(
-        js.finalize_finished_jobs(executor, ds.monitored_jobs)
+    tasks["finalize_finished_submissions"] = loop.create_task(
+        js.finalize_finished_submissions(ds.monitored_jobs)
     )
     tasks["show_stats"] = loop.create_task(js.show_stats(ds))
 
