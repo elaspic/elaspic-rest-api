@@ -1,5 +1,5 @@
 from .types import Args, DataStructures, Item, JobKey  # isort:skip
-from . import email, perf
+from . import elaspic2, email, perf
 from .db import EDBConnection, WDBConnection
 from .finalize import finalize_finished_submissions, finalize_lingering_jobs, finalize_mutation
 from .jobsubmitter import parse_input_data, start_jobsubmitter, submit_job
