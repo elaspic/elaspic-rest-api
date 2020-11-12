@@ -11,3 +11,11 @@
 uvicorn elaspic_rest_api.app:app --host 0.0.0.0 --port 8000 --reload \
     --log-level=debug --log-config .gitlab/docker/logconfig.ini --env-file .env
 ```
+
+## Deployment
+
+```bash
+docker run --env-file .env --env HOST_USER_ID=9284 \
+    --volume /home/kimlab1/database_data/elaspic:/home/kimlab1/database_data/elaspic:rw \
+    c85dd7fe98fa
+```
