@@ -3,6 +3,7 @@ import pytest
 from elaspic_rest_api import jobsubmitter as js
 from elaspic_rest_api.jobsubmitter.finalize import set_job_status
 
+
 @pytest.mark.asyncio
 async def test_set_job_status_valid():
     job_id = "000261"

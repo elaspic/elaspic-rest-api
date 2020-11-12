@@ -3,7 +3,6 @@ import logging
 from collections import deque
 from typing import Dict
 
-from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
 
 logger = logging.getLogger(__name__)
@@ -39,7 +38,7 @@ async def persist_precalculated(precalculated: Dict, precalculated_cache: Dict) 
             await asyncio.sleep(js.perf.SLEEP_FOR_DB)
             continue
         try:
-            async with js.EDBConnection() as conn :
+            async with js.EDBConnection() as conn:
                 async with conn.cursor() as cur:
                     await cur.executemany(
                         "INSERT INTO jobsubmitter_cache (id, job_id) values (%s,%s) "

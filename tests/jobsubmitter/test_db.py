@@ -1,5 +1,6 @@
-from elaspic_rest_api.jobsubmitter import db
 import pytest
+
+from elaspic_rest_api.jobsubmitter import db
 
 
 @pytest.mark.parametrize("DBConnection", [db.EDBConnection, db.WDBConnection])
