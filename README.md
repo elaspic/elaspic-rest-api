@@ -15,7 +15,8 @@ uvicorn elaspic_rest_api.app:app --host 0.0.0.0 --port 8000 --reload \
 ## Deployment
 
 ```bash
-docker run --env-file .env --env HOST_USER_ID=9284 \
+docker run --tty --env-file .env --env HOST_USER_ID=9284 \
+    --env=GUNICORN_CMD_ARGS="--bind 0.0.0.0:8080 --workers 1" \
     --volume /home/kimlab1/database_data/elaspic:/home/kimlab1/database_data/elaspic:rw \
-    c85dd7fe98fa
+    affb2a451524
 ```
