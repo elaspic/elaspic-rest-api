@@ -1,9 +1,12 @@
 from enum import Enum
-from typing import Dict, List, NamedTuple, Tuple, Type
+from pathlib import Path
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import aiohttp
 from kmbio import PDB
+from kmtools import structure_tools
 
+from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
 
 core_mutation_local_sql = """\
@@ -69,7 +72,7 @@ async def query_mutation_data(item: js.Item) -> List[MutationInfo]:
 
     if args["job_type"] == "database":
         core_mutation_sql = core_mutation_database_sql
-        interface_mutation_sql = core_mutation_database_sql
+        interface_mutation_sql = interface_mutation_database_sql
     else:
         assert args["job_type"] == "local"
         core_mutation_sql = core_mutation_local_sql
@@ -83,38 +86,71 @@ async def query_mutation_data(item: js.Item) -> List[MutationInfo]:
             await cur.execute(interface_mutation_sql, kwargs)
             interface_mutation_values: List[Tuple[str, str, str]] = await cur.fetchall()
 
+    data_dir = Path(config.DATA_DIR)
     mutation_values = (
         #
-        [MutationInfo(*values, COI.CORE) for values in core_mutation_values]
-        + [MutationInfo(*values, COI.INTERFACE) for values in interface_mutation_values]
+        [
+            MutationInfo(data_dir.joinpath(v[0]).resolve().as_posix(), v[1], v[2], COI.CORE)
+            for v in core_mutation_values
+        ]
+        + [
+            MutationInfo(data_dir.joinpath(v[0]).resolve().as_posix(), v[1], v[2], COI.INTERFACE)
+            for v in interface_mutation_values
+        ]
     )
     return mutation_values
 
 
-def extract_protein_info(mutation_info: MutationInfo, remove_hetatms=True) -> Dict:
+def extract_protein_info(mutation_info: MutationInfo) -> Dict:
+    structure_file = Path(config.DATA_DIR).joinpath(mutation_info.structure_file)
+
+    if not structure_file.is_file():
+        raise EL2Error(f"Could not find structure for mutation: {mutation_info}.")
+    if config.DATA_DIR not in structure_file.as_posix():
+        raise EL2Error(f"Structure file is not available remotely for mutation: {mutation_info}.")
+
+    protein_sequence, ligand_sequence = _extract_chain_sequences(
+        structure_file, mutation_info.chain_id, mutation_info.coi
+    )
+
+    if protein_sequence is None:
+        raise EL2Error(f"Could not extract protein sequence for mutation: {mutation_info}.")
+    if mutation_info.coi == COI.INTERFACE and ligand_sequence is None:
+        raise EL2Error(f"Could not extract ligand sequence for mutation: {mutation_info}.")
+    if protein_sequence[int(mutation_info.mutation[1:-1]) - 1] != mutation_info.mutation[0]:
+        raise EL2Error(f"Mutation does not match extracted protein sequence: {mutation_info}.")
+
+    structure_file_url = structure_file.as_posix().replace(
+        config.DATA_DIR, "http://elaspic.ccbr.proteinsolver.org/static"
+    )
+    result = {
+        **{
+            "protein_structure_url": structure_file_url,
+            "protein_sequence": protein_sequence,
+            "mutations": mutation_info.mutation,
+        },
+        **({"ligand_sequence": ligand_sequence} if ligand_sequence is not None else {}),
+    }
+
+    return result
+
+
+def _extract_chain_sequences(
+    structure_file: Path, chain_id: str, coi: COI, remove_hetatms=True
+) -> Tuple[Optional[str], Optional[str]]:
     structure = PDB.load(structure_file)
     unknown_residue_marker = "" if remove_hetatms else "X"
-
     protein_sequence = None
     ligand_sequence = None
     for chain in structure.chains:
         chain_sequence = structure_tools.get_chain_sequence(
             chain, if_unknown="replace", unknown_residue_marker=unknown_residue_marker
         )
-        if chain.id == mutation_info.chain_id:
+        if chain.id == chain_id:
             protein_sequence = chain_sequence
-        elif mutation_info.coi == COI.INTERFACE and ligand_sequence is None and chain_sequence:
+        elif coi == COI.INTERFACE and ligand_sequence is None and chain_sequence:
             ligand_sequence = chain_sequence
-
-    result = {
-        "protein_structure_url": "",
-        "protein_sequence": protein_sequence,
-        "mutations": mutation_info.mutation,
-    }
-
-    if mutation_info.coi == COI.INTERFACE:
-        result["ligand_sequence"] = ligand_sequence
-    return result
+    return protein_sequence, ligand_sequence
 
 
 def get_protein_info_local(item: js.Item):

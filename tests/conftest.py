@@ -12,6 +12,11 @@ with DATA_DIR.joinpath("testcases.yaml").open() as fin:
     DATA_IN = yaml.load(fin.read(), Loader=yaml.FullLoader)
 
 
+@pytest.fixture
+def data_dir():
+    return DATA_DIR
+
+
 @pytest.fixture(scope="function", params=DATA_IN)
 def data_in(request):
     data = {"secret_key": config.SECRET_KEY, **request.param}
