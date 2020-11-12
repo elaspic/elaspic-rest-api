@@ -1,4 +1,4 @@
-from elaspic_rest_api.jobsubmitter.main import parse_input_data
+from elaspic_rest_api.jobsubmitter.jobsubmitter import parse_input_data
 from elaspic_rest_api.jobsubmitter.submit import create_qsub_system_command
 
 

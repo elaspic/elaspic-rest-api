@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 import yaml
+from elaspic_rest_api.types import DataIn
+from elaspic_rest_api import config
 
 DATA_DIR = Path(__file__).parent.joinpath("data").resolve(strict=True)
 
@@ -11,4 +13,5 @@ with DATA_DIR.joinpath("testcases.yaml").open() as fin:
 
 @pytest.fixture(scope="function", params=DATA_IN)
 def data_in(request):
-    return request.param.copy()
+    data = {"secret_key": config.SECRET_KEY, **request.param}
+    return DataIn(**data)
