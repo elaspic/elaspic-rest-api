@@ -59,15 +59,15 @@ UNLOCK TABLES;
 async def finalize_mutation(item: js.Item):
     args = item.args
     async with js.WDBConnection() as conn:
-        with conn.cursor() as cur:
+        async with conn.cursor() as cur:
             for mutation in args["mutations"].split(","):
                 # Local pipelines may have underscore in mutation
                 if "_" in mutation:
                     mutation = mutation.split("_")[-1]
-                cur.execute(
+                await cur.execute(
                     FINALIZE_MUTATION_SQL, {"protein_id": args["protein_id"], "mutation": mutation}
                 )
-        conn.commit()
+        await conn.commit()
 
 
 async def finalize_finished_submissions(monitored_jobs: Dict[js.JobKey, Set]):
@@ -84,7 +84,11 @@ async def finalize_finished_submissions(monitored_jobs: Dict[js.JobKey, Set]):
                     )
                     if job_key[1]:  # job email was specified
                         loop.run_in_executor(
-                            js.email.send_job_finished_email, job_key[0], job_key[1], "complete"
+                            None,
+                            js.email.send_job_finished_email,
+                            job_key[0],
+                            job_key[1],
+                            "complete",
                         )
                     await set_job_status(job_key[0])
                     finished_jobs.append(job_key)

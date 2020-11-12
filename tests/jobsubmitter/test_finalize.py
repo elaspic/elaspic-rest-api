@@ -24,4 +24,4 @@ async def test_finalize_mutation(data_in):
     for items in items_list:
         s, m, muts = items
         for item in muts:
-            js.finalize_mutation(item)
+            await js.finalize_mutation(item)
