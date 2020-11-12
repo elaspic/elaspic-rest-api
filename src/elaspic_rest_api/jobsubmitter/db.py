@@ -15,7 +15,8 @@ class _DBConnection:
     pools: Dict[str, int] = {}
 
     def __init__(self):
-        self._conn = None
+        self._current_pool = None
+        self._current_conn = None
 
     async def __aenter__(self):
         # Some tests will fail if we do not have a different pool for each asyncio loop
@@ -23,18 +24,18 @@ class _DBConnection:
         key = (self.db_name, hash(loop))
 
         try:
-            pool = self.pools[key]
+            self._current_pool = self.pools[key]
         except KeyError:
-            pool = await aiomysql.create_pool(
-                db=self.db_name, loop=loop, **self.db_connection_params
+            self._current_pool = await aiomysql.create_pool(
+                db=self.db_name, loop=loop, maxsize=2, **self.db_connection_params
             )
-            self.pools[key] = pool
+            self.pools[key] = self._current_pool
 
-        self._conn = await pool.acquire()
-        return self._conn
+        self._current_conn = await self._current_pool.acquire()
+        return self._current_conn
 
     async def __aexit__(self, exc_type, exc_value, traceback):
-        self._conn.close()
+        self._current_pool.release(self._current_conn)
 
 
 class EDBConnection(_DBConnection):
