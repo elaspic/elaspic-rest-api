@@ -76,3 +76,4 @@ target/
 # Jupyter
 .ipynb_checkpoints
 .env
+.venv
