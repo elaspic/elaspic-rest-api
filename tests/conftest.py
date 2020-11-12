@@ -2,8 +2,9 @@ from pathlib import Path
 
 import pytest
 import yaml
-from elaspic_rest_api.types import DataIn
+
 from elaspic_rest_api import config
+from elaspic_rest_api.types import DataIn
 
 DATA_DIR = Path(__file__).parent.joinpath("data").resolve(strict=True)
 
