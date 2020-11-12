@@ -17,7 +17,7 @@ export MAIL=/var/spool/mail/jobsubmitter
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/jobsubmitter/bin
 export supkg="su-exec"
 chown jobsubmitter:jobsubmitter $HOME
-cp -R /etc/skel $HOME && chown -R conda:conda $HOME/skel && (ls -A1 $HOME/skel | xargs -I {} mv -n $HOME/skel/{} $HOME) && rm -Rf $HOME/skel
+cp -R /etc/skel $HOME && chown -R jobsubmitter:jobsubmitter $HOME/skel && (ls -A1 $HOME/skel | xargs -I {} mv -n $HOME/skel/{} $HOME) && rm -Rf $HOME/skel
 
 # cp /root/.condarc $HOME/.condarc && chown conda:conda $HOME/.condarc
 cd $HOME
