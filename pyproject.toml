@@ -16,3 +16,26 @@ exclude = '''
   | .conda
 )/
 '''
+
+[tool.isort]
+line_length = 100
+skip = "docs,__init__.py,setup.py,.gitlab,.conda,env"
+default_section = "THIRDPARTY"
+known_first_party = "elaspic_rest_api"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+
+[tool.pytest.ini_options]
+log_cli = true
+junit_family = "xunit2"
+addopts = """
+-x --ignore=setup.py --ignore=docs/ --ignore=build/ --ignore=.conda/ --ignore=env
+--ignore=tests/test_jobsubmitter.py
+--ignore=tests/test_throughput.py
+"""
+filterwarnings = [
+    "ignore:The loop argument is deprecated:DeprecationWarning",
+    'ignore:"@coroutine" decorator is deprecated:DeprecationWarning',
+]
