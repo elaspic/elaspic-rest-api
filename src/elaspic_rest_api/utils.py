@@ -1,3 +1,4 @@
+import asyncio
 import importlib.resources
 import logging
 import os
@@ -27,6 +28,12 @@ def return_on_call(function_path: str):
             yield
         except CustomException:
             pass
+
+
+def mock_await(*args, **kwargs):
+    f = asyncio.Future()
+    f.set_result(1)
+    return f
 
 
 def copy_scripts():
