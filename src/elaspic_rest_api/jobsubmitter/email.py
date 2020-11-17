@@ -30,10 +30,14 @@ def send_admin_email(item: Item, system_command: str, restarting: bool = False) 
     msg = EmailMessage()
     msg.set_content("\n".join(body))
     msg["Subject"] = f"ELASPIC job {item.job_id} ({item.unique_id}) failed. {restarting_string}"
-    msg["From"] = config.NOREPLY_EMAIL
-    msg["To"] = "kimlab.webserver@gmail.com"
+    msg["From"] = config.EMAIL_HOST_USER
+    msg["To"] = config.ADMIN_EMAIL
     try:
-        with smtplib.SMTP("localhost") as s:
+        with smtplib.SMTP(config.EMAIL_HOST, config.EMAIL_PORT) as s:
+            if config.EMAIL_USE_TLS:
+                s.starttls()
+            if config.EMAIL_HOST_USER and config.EMAIL_HOST_PASSWORD:
+                s.login(config.EMAIL_HOST_USER, config.EMAIL_HOST_PASSWORD)
             s.send_message(msg)
         return False
     except Exception as e:
@@ -77,14 +81,18 @@ def send_job_finished_email(job_id: str, job_email: str, send_type: str) -> bool
 
     msg = EmailMessage()
     msg["Subject"] = "%s %s - Job ID: %s" % (config.SITE_NAME, subject, job_id)
-    msg["From"] = config.NOREPLY_EMAIL
+    msg["From"] = config.EMAIL_HOST_USER
     msg["To"] = job_email
     msg.set_content(text_content)
     msg.add_alternative(html_content, subtype="html")
 
     logger.debug("Sending email...")
     try:
-        with smtplib.SMTP("localhost") as s:
+        with smtplib.SMTP(config.EMAIL_HOST, config.EMAIL_PORT) as s:
+            if config.EMAIL_USE_TLS:
+                s.starttls()
+            if config.EMAIL_HOST_USER and config.EMAIL_HOST_PASSWORD:
+                s.login(config.EMAIL_HOST_USER, config.EMAIL_HOST_PASSWORD)
             s.send_message(msg)
         logger.debug("Email sent successfully! :)")
         return False

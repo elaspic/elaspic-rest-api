@@ -1,9 +1,27 @@
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
+
+
+@pytest.mark.skipif(not os.getenv("RUN_INTEGRATION_TESTS"), reason="Not running integration tests")
+def test_send_admin_email_it():
+    item = js.Item(
+        run_type="mutations",
+        args={
+            "job_id": "test-send-job-failed-email",
+            "job_type": "mutations",
+            "protein_id": "4dkl",
+            "mutations": "G1A",
+        },
+    )
+    return_code = js.email.send_admin_email(
+        item, system_command="echo 'hello world'", restarting=False
+    )
+    assert not return_code
 
 
 @pytest.mark.parametrize("restarting", [False, True])
@@ -23,6 +41,14 @@ def test_send_admin_email(sendmail: MagicMock, restarting: bool):
     )
     assert not return_code
     assert sendmail.calledonce()
+
+
+@pytest.mark.skipif(not os.getenv("RUN_INTEGRATION_TESTS"), reason="Not running integration tests")
+def test_send_job_finished_email_it():
+    job_id = "test-send-job-finished-email"
+    job_email = config.ADMIN_EMAIL
+    return_code = js.email.send_job_finished_email(job_id, job_email, "complete")
+    assert not return_code
 
 
 @pytest.mark.parametrize("send_type", ["started", "complete"])

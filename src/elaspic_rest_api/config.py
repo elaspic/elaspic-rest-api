@@ -32,3 +32,10 @@ SCRIPTS_DIR = op.join(DATA_DIR, "scripts")
 PROVEAN_LOCK_DIR = op.join(DATA_DIR, "locks", "sequence")
 MODEL_LOCK_DIR = op.join(DATA_DIR, "locks", "model")
 MUTATION_LOCK_DIR = op.join(DATA_DIR, "locks", "mutation")
+
+# Email configuration
+EMAIL_USE_TLS = bool(os.getenv("EMAIL_USE_TLS"))
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "0"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
