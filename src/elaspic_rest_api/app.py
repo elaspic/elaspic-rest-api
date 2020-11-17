@@ -34,6 +34,28 @@ async def submit_job(data_in: DataIn, background_tasks: BackgroundTasks):
         return {"status": "restricted"}
 
 
+@app.get("/status", status_code=200)
+async def get_pre_qsub_queue(api_token: str):
+    queues_to_monitor = [
+        "pre_qsub_queue",
+        "qsub_queue",
+        "validation_queue",
+        "elaspic2_pending_queue",
+        "elaspic2_running_queue",
+    ]
+    ds: js.DataStructures = js_data["ds"]
+    if api_token == config.API_TOKEN:
+        result = {
+            **{name: list(getattr(ds, name)._queue) for name in queues_to_monitor},
+            "monitored_jobs": [
+                (tuple(key), list(values)) for key, values in ds.monitored_jobs.items()
+            ],
+        }
+    else:
+        result = {}
+    return result
+
+
 @app.get("/_ah/warmup", include_in_schema=False)
 def warmup():
     return {}
