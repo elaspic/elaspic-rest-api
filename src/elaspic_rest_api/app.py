@@ -27,7 +27,7 @@ js_data: Dict[str, Any] = {}
 
 @app.post("/", status_code=200)
 async def submit_job(data_in: DataIn, background_tasks: BackgroundTasks):
-    if data_in.secret_key == config.SECRET_KEY:
+    if data_in.api_token == config.API_TOKEN:
         background_tasks.add_task(js.submit_job, data_in, js_data["ds"])
         return {"status": "submitted"}
     else:

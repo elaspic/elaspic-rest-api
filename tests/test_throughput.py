@@ -21,7 +21,7 @@ def test_one():
     data_in = {
         "job_id": "xoxoxo",
         "job_type": "database",
-        "secret_key": config.SECRET_KEY,
+        "api_token": config.API_TOKEN,
         "mutations": [
             {
                 "protein_id": d.split(".")[0],
@@ -41,7 +41,7 @@ def test_multi_mutants():
         data_in = {
             "job_id": "xoxoxo",
             "job_type": "database",
-            "secret_key": config.SECRET_KEY,
+            "api_token": config.API_TOKEN,
             "mutations": [
                 {
                     "protein_id": DATA[i + j].split(".")[0],

@@ -16,7 +16,7 @@ async def test_1(data_in):
     JOB_ID_OFFSET = 999000
     data_in["job_id"] += JOB_ID_OFFSET
     data_in["job_email"] = config.ADMIN_EMAIL
-    data_in["secret_key"] = config.SECRET_KEY
+    data_in["api_token"] = config.API_TOKEN
     # Submit mutations
     mut = await jobsubmitter.main(data_in)
     logging.info("Submitted mutation: %s", mut)

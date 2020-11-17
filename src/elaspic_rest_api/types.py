@@ -12,7 +12,7 @@ class Mutations(BaseModel):
 
 
 class DataIn(BaseModel):
-    secret_key: str
+    api_token: str
     job_id: int
     job_type: str
     job_email: Optional[str]
@@ -21,7 +21,7 @@ class DataIn(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "secret_key": "XXXXX",
+                "api_token": "XXXXX",
                 "job_id": 1,
                 "job_type": "database",
                 "mutations": [

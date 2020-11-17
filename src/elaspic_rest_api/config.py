@@ -2,7 +2,7 @@ import os
 import os.path as op
 
 DATA_DIR = os.environ["DATA_DIR"]
-SECRET_KEY = os.environ["SECRET_KEY"]
+API_TOKEN = os.environ["API_TOKEN"]
 SLURM_MASTER_USER = os.environ["SLURM_MASTER_USER"]
 SLURM_MASTER_HOST = os.environ["SLURM_MASTER_HOST"]
 SENTRY_DSN = os.getenv("SENTRY_DSN")

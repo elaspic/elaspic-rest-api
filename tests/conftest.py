@@ -19,5 +19,5 @@ def data_dir():
 
 @pytest.fixture(scope="function", params=DATA_IN)
 def data_in(request):
-    data = {"secret_key": config.SECRET_KEY, **request.param}
+    data = {"api_token": config.API_TOKEN, **request.param}
     return DataIn(**data)
