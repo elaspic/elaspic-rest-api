@@ -9,8 +9,7 @@ SENTRY_DSN = os.getenv("SENTRY_DSN")
 SITE_IP = os.getenv("SITE_IP", "0.0.0.0")
 SITE_PORT = os.getenv("SITE_PORT", 8080)
 
-NOREPLY_EMAIL = "no-reply@kimlab.org"
-ADMIN_EMAIL = "kimlab.webserver@gmail.com"
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 
 SITE_NAME = "ELASPIC"
 SITE_URL = "http://{}:{}".format(SITE_IP, SITE_PORT)
