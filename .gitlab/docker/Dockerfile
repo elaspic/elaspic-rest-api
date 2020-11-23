@@ -22,7 +22,7 @@ RUN apt-get -qq -o=Dpkg::Use-Pty=0 update \
 
 SHELL ["/bin/bash", "-c"]
 
-RUN groupadd -g 32766 lucky
+RUN groupadd -g 32766 conda
 
 RUN mkdir -p /opt/docker/bin \
     && curl -sS https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh \
@@ -34,7 +34,7 @@ RUN mkdir -p /opt/docker/bin \
     && conda install -yq -c conda-forge -c defaults tini su-exec \
     && python -m pip install https://gitlab.com/elaspic/${PACKAGE_NAME}/-/archive/${PACKAGE_VERSION}/${PACKAGE_NAME}-${PACKAGE_VERSION}.zip \
     && conda clean -tipy \
-    && chgrp -R lucky /opt/conda \
+    && chgrp -R conda /opt/conda \
     && chmod -R g=u /opt/conda
 
 COPY logconfig.ini /opt/conda/share/
@@ -44,7 +44,7 @@ COPY entrypoint /opt/docker/bin/entrypoint
 # Ensure that all containers start with tini and the user selected process.
 # Activate the `conda` environment `base` and the devtoolset compiler.
 # Provide a default command (`bash`), which will start if the user doesn't specify one.
-ENTRYPOINT [ "/opt/conda/bin/tini", "--", "/opt/docker/bin/entrypoint" ]
+ENTRYPOINT [ "/opt/docker/bin/entrypoint" ]
 
 # During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
 CMD [ "gunicorn", "elaspic_rest_api.app:app", "--worker-class", "uvicorn.workers.UvicornWorker", \

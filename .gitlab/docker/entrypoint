@@ -9,15 +9,17 @@
 # to mounted volumes
 # Adapted from https://denibertovic.com/posts/handling-permissions-with-docker-volumes/
 USER_ID=${HOST_USER_ID:-9001}
-useradd --shell /bin/bash -u $USER_ID -G lucky -o -c "" -m jobsubmitter
-export HOME=/home/jobsubmitter
-export USER=jobsubmitter
-export LOGNAME=jobsubmitter
-export MAIL=/var/spool/mail/jobsubmitter
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/jobsubmitter/bin
+GROUP_ID=${HOST_GROUP_ID:-9001}
+groupadd -g ${GROUP_ID} elaspic
+useradd --shell /bin/bash -u $USER_ID -g elaspic -G conda -o -c "" -m elaspic
+export HOME=/home/elaspic
+export USER=elaspic
+export LOGNAME=elaspic
+export MAIL=/var/spool/mail/elaspic
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/elaspic/bin
 export supkg="su-exec"
-chown jobsubmitter:jobsubmitter $HOME
-cp -R /etc/skel $HOME && chown -R jobsubmitter:jobsubmitter $HOME/skel && (ls -A1 $HOME/skel | xargs -I {} mv -n $HOME/skel/{} $HOME) && rm -Rf $HOME/skel
+chown elaspic:elaspic $HOME
+cp -R /etc/skel $HOME && chown -R elaspic:elaspic $HOME/skel && (ls -A1 $HOME/skel | xargs -I {} mv -n $HOME/skel/{} $HOME) && rm -Rf $HOME/skel
 
 # cp /root/.condarc $HOME/.condarc && chown conda:conda $HOME/.condarc
 cd $HOME
@@ -26,14 +28,14 @@ cd $HOME
 mkdir -p $HOME/.ssh && chmod 700 $HOME/.ssh
 echo "$KNOWN_HOSTS" >> $HOME/.ssh/known_hosts && chmod 644 $HOME/.ssh/known_hosts
 echo "$SSH_PRIVATE_KEY" | tr -d '\r' | sed 's/\\n/\n/g' > $HOME/.ssh/id_ed25519 && chmod 600 $HOME/.ssh/id_ed25519
-chown jobsubmitter:jobsubmitter -R $HOME/.ssh
+chown elaspic:elaspic -R $HOME/.ssh
 
 # Activate the `base` conda environment.
 source /opt/conda/etc/profile.d/conda.sh
 conda activate base
 
 # Copy script files
-/opt/conda/bin/$supkg jobsubmitter python -m elaspic_rest_api --log-level debug copy-scripts
+/opt/conda/bin/$supkg elaspic python -m elaspic_rest_api --log-level debug copy-scripts
 
 # Run whatever the user wants.
-exec /opt/conda/bin/$supkg jobsubmitter "$@"
+exec /opt/conda/bin/$supkg elaspic "$@"
