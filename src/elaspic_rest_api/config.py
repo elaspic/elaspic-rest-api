@@ -1,6 +1,10 @@
 import os
 import os.path as op
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 DATA_DIR = os.environ["DATA_DIR"]
 API_TOKEN = os.environ["API_TOKEN"]
 SLURM_MASTER_USER = os.environ["SLURM_MASTER_USER"]
