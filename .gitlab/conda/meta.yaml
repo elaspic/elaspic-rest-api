@@ -15,6 +15,16 @@ requirements:
     - python
   run:
     - python
+    - aiofiles =0.5
+    - aiomysql =0.0.20
+    - bleach =3.2
+    - fastapi =0.61
+    - fire =0.3
+    - gunicorn =20.0
+    - jinja2 =2.11
+    - python-dotenv = 0.15
+    - sentry-sdk =0.19
+    - uvicorn =0.11
 
 test:
   imports:
