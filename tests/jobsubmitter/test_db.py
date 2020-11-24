@@ -4,6 +4,7 @@ from elaspic_rest_api.jobsubmitter import db
 
 
 @pytest.mark.parametrize("DBConnection", [db.EDBConnection, db.WDBConnection])
+@pytest.mark.asyncio
 async def test_db(DBConnection):
     async with DBConnection() as conn:
         async with conn.cursor() as cur:
