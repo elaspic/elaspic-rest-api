@@ -100,16 +100,17 @@ build-py38:
     # Create conda environment for testing
     - conda update -yq conda
     - conda create -n test -q -c file://${CI_PROJECT_DIR}/conda-bld --strict-channel-priority
-      "python=${PYTHON_VERSION}" ${CI_PROJECT_NAME} pytest pytest-cov pyyaml python-dotenv || true
+      "python=${PYTHON_VERSION}" ${CI_PROJECT_NAME} pytest pytest-cov pyyaml || true
     - source activate test
+    - pip install -q pytest-dotenv
     # Run tests
     - PKG_INSTALL_DIR=$(python -c "import elaspic_rest_api; print(elaspic_rest_api.__path__[0])")
-    - cp -f "${DOTENV_FILE}" .env
     - python -m pytest
       -c setup.cfg
       --cov="${PKG_INSTALL_DIR}"
       --cov-config=setup.cfg
       --color=yes
+      --envfile="${DOTENV_FILE}"
       "tests/"
     # Coverage
     - mkdir coverage
@@ -222,7 +223,7 @@ pages:
   before_script:
     - sudo yum update -y -q
     - sudo yum install -y -q unzip
-    - pip install jinja2 python-gitlab
+    - pip install -q jinja2 python-gitlab
   script:
     # Set environment variables
     - export OUTPUT_DIR="./public"
