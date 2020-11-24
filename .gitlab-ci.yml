@@ -45,6 +45,7 @@ variables:
         - salilab
         - omnia
       EOF
+    - conda install -yq mamba
 
 # === Lint ===
 
@@ -53,7 +54,7 @@ lint:
   extends:
     - .configure
   script:
-    - conda create -n lint -q "python=${PYTHON_VERSION}" isort toml flake8 mypy black
+    - mamba create -n lint -q "python=${PYTHON_VERSION}" isort toml flake8 mypy black
     - source activate lint
     - python -m isort -p ${CI_PROJECT_NAME} -c .
     - python -m flake8 src
@@ -69,10 +70,10 @@ build:
   extends:
     - .configure
   script:
-    - conda install -yq conda conda-build conda-verify conda-forge-pinning
+    - mamba install -yq conda conda-build conda-verify conda-forge-pinning
     - cd "${CI_PROJECT_DIR}/.gitlab/conda"
     - >
-      conda build .
+      mamba build .
       --variant-config-files /opt/conda/conda_build_config.yaml
       --variants "{python: [$PYTHON_VERSION], numpy: [1.16], python_impl: [cpython]}"
       --output-folder "$CI_PROJECT_DIR/conda-bld"
@@ -89,8 +90,7 @@ test:
     - .configure
   script:
     # Create conda environment for testing
-    - conda update -yq conda
-    - conda create -n test -q -c file://${CI_PROJECT_DIR}/conda-bld --strict-channel-priority
+    - mamba create -n test -q -c file://${CI_PROJECT_DIR}/conda-bld --strict-channel-priority
       "python=${PYTHON_VERSION}" ${CI_PROJECT_NAME} pytest pytest-cov pyyaml || true
     - source activate test
     - pip install -q pytest-dotenv
@@ -121,8 +121,7 @@ docs:
     - .configure
   script:
     # Create conda environment for testing
-    - conda update -yq conda
-    - conda create -n test -q -c file://${CI_PROJECT_DIR}/conda-bld --strict-channel-priority
+    - mamba create -n test -q -c file://${CI_PROJECT_DIR}/conda-bld --strict-channel-priority
       "python=${PYTHON_VERSION}" ${CI_PROJECT_NAME} nbconvert ipython ipykernel pandoc || true
     - source activate test
     - pip install -q sphinx sphinx_rtd_theme msmb_theme recommonmark sphinx-markdown-tables
