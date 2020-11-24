@@ -90,7 +90,6 @@ test:
       "python=${PYTHON_VERSION}" ${CI_PROJECT_NAME} pyyaml
       pytest pytest-cov python-dotenv pytest-asyncio || true
     - source activate test
-    - pip install pytest-dotenv
     # Run tests
     - PKG_INSTALL_DIR=$(python -c "import elaspic_rest_api; print(elaspic_rest_api.__path__[0])")
     - cat "${DOTENV_FILE}"
