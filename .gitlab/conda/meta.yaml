@@ -29,6 +29,7 @@ requirements:
     # Bioinformatics packages
     - kmbio =2.1.0
     - kmtools =0.2.8
+    - mysqlclient =2.0
 
 test:
   imports:
