@@ -49,4 +49,5 @@ addopts = """
 filterwarnings = [
     "ignore:The loop argument is deprecated:DeprecationWarning",
     'ignore:"@coroutine" decorator is deprecated:DeprecationWarning',
+    "error:PytestUnhandledCoroutineWarning",
 ]
