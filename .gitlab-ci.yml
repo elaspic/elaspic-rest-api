@@ -64,7 +64,7 @@ lint:
 
 # === Build ===
 
-.build:
+build:
   stage: build
   extends:
     - .configure
@@ -80,19 +80,10 @@ lint:
     paths:
       - conda-bld
 
-build-py37:
-  extends: .build
-  variables:
-    <<: [*py37]
-
-build-py38:
-  extends: .build
-  variables:
-    <<: [*py38]
 
 # === Test ===
 
-.test:
+test:
   stage: test
   extends:
     - .configure
@@ -120,15 +111,6 @@ build-py38:
     paths:
       - coverage
 
-test-py37:
-  extends: .test
-  dependencies:
-    - build-py37
-
-test-py38:
-  extends: .test
-  dependencies:
-    - build-py38
 
 # === Document ===
 
@@ -155,8 +137,8 @@ docs:
     - mv htmlcov public/
   coverage: /^TOTAL.* (\d+\%)/
   dependencies:
-    - build-py38
-    - test-py38
+    - build
+    - test
   artifacts:
     paths:
       - public
@@ -164,7 +146,7 @@ docs:
 
 # === Deploy ===
 
-.deploy:
+deploy:
   stage: deploy
   extends:
     - .configure
@@ -172,31 +154,8 @@ docs:
     - anaconda -t $ANACONDA_TOKEN upload $CI_PROJECT_DIR/conda-bld/*/*.tar.bz2 -u ostrokach-forge --no-progress --force
   only:
     - tags
-  allow_failure: true  # TODO: Change when no longer testing.
-
-deploy-py37:
-  extends:
-    - .deploy
   dependencies:
-    - build-py37
-
-deploy-py38:
-  extends:
-    - .deploy
-  dependencies:
-    - build-py38
-
-deploy-pypi:
-  stage: deploy
-  extends:
-    - .configure
-  script:
-    - python -m pip install -q twine wheel
-    - python setup.py sdist bdist_wheel
-    - twine upload dist/*
-  only:
-    - tags
-  allow_failure: true  # TODO: Change when no longer testing.
+    - build
 
 trigger-custom-pipelines:
   stage: deploy
