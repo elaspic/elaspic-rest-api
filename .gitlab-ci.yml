@@ -13,12 +13,8 @@ stages:
 
 variables:
   PACKAGE_VERSION: "0.1.0"
+  PYTHON_VERSION: "3.9"
 
-.py37: &py37
-  PYTHON_VERSION: "3.7"
-
-.py38: &py38
-  PYTHON_VERSION: "3.8"
 
 # === Configurations ===
 
