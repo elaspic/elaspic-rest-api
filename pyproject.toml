@@ -18,12 +18,14 @@ exclude = '''
 '''
 
 [tool.coverage.run]
-omit = "*.so"
+omit = [
+    "*.so",
+]
 
 [tool.coverage.paths]
 source = [
     "elaspic_rest_api",
-    "*/site-packages/elaspic_rest_api"
+    "*/site-packages/elaspic_rest_api",
 ]
 
 [tool.isort]
