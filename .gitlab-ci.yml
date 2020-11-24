@@ -87,7 +87,8 @@ test:
   script:
     # Create conda environment for testing
     - mamba create -n test -q -c file://${CI_PROJECT_DIR}/conda-bld --strict-channel-priority
-      "python=${PYTHON_VERSION}" ${CI_PROJECT_NAME} pytest pytest-cov pyyaml python-dotenv || true
+      "python=${PYTHON_VERSION}" ${CI_PROJECT_NAME} pyyaml
+      pytest pytest-cov python-dotenv pytest-asyncio || true
     - source activate test
     - pip install pytest-dotenv
     # Run tests
