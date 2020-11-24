@@ -15,7 +15,9 @@ requirements:
     - python
   run:
     - python
+    # Webserver packages
     - aiofiles =0.5
+    - aiohttp =3.7
     - aiomysql =0.0.20
     - bleach =3.2
     - fastapi =0.61
@@ -24,6 +26,9 @@ requirements:
     - jinja2 =2.11
     - sentry-sdk =0.19
     - uvicorn =0.11
+    # Bioinformatics packages
+    - kmbio =2.1.0
+    - kmtools =0.2.8
 
 test:
   imports:
