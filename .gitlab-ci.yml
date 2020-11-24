@@ -105,6 +105,7 @@ build-py38:
     - pip install -q pytest-dotenv
     # Run tests
     - PKG_INSTALL_DIR=$(python -c "import elaspic_rest_api; print(elaspic_rest_api.__path__[0])")
+    - cat "${DOTENV_FILE}"
     - python -m pytest
       -c setup.cfg
       --cov="${PKG_INSTALL_DIR}"
