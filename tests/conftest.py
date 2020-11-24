@@ -4,10 +4,10 @@ import pytest
 import yaml
 from dotenv import load_dotenv
 
+load_dotenv()
+
 from elaspic_rest_api import config
 from elaspic_rest_api.types import DataIn
-
-load_dotenv()
 
 DATA_DIR = Path(__file__).parent.joinpath("data").resolve(strict=True)
 
