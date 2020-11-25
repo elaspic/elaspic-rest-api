@@ -20,3 +20,15 @@ docker run --tty --env-file .env --env HOST_USER_ID=9284 \
     --volume /home/kimlab1/database_data/elaspic:/home/kimlab1/database_data/elaspic:rw \
     affb2a451524
 ```
+
+## Creating Docker image
+
+```bash
+# For a private repo, you may need to set the CONDA_BLD_REQUEST_HEADER environment variable
+export CONDA_BLD_REQUEST_HEADER="PRIVATE-TOKEN: <your_access_token>"
+
+# Replate "870684925" with the ID of the build for which you want to create the image
+export CONDA_BLD_ARCHIVE_URL="https://gitlab.com/api/v4/projects/22388857/jobs/870684925/artifacts"
+
+docker build --build-arg CONDA_BLD_ARCHIVE_URL .gitlab/docker/
+```
