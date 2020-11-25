@@ -185,7 +185,7 @@ pages:
     - export OUTPUT_DIR="./public"
     - mkdir -p ${OUTPUT_DIR}
     # Download all previous docs
-    - python .ci/pages/download_docs.py
+    - python .gitlab/pages/download_docs.py
       --project-id ${CI_PROJECT_ID}
       --job-name docs
       --private-token ${CI_DOCS_TOKEN}
