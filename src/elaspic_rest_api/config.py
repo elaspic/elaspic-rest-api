@@ -25,6 +25,8 @@ DB_USER = os.environ["DB_USER"]
 DB_PASSWORD = os.environ["DB_PASSWORD"]
 DB_CONNECTION_PARAMS = dict(host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASSWORD)
 
+ELASPIC2_URL = os.environ["ELASPIC2_URL"]
+
 SCRIPTS_DIR = op.join(DATA_DIR, "scripts")
 
 # Jobsubmitter

@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
+from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
 from elaspic_rest_api.jobsubmitter.elaspic2types import COI, MutationInfo, MutationScores
 from elaspic_rest_api.utils import mock_await, return_on_call
@@ -13,7 +14,7 @@ from elaspic_rest_api.utils import mock_await, return_on_call
 @patch("elaspic_rest_api.jobsubmitter.elaspic2.js.finalize_mutation", mock_await)
 @patch("elaspic_rest_api.jobsubmitter.elaspic2.update_mutation_scores")
 async def test_elaspic2_collect_loop(mock_update_mutation_scores):
-    el2_web_url = "https://elaspic.uc.r.appspot.com/jobs/213441783"
+    el2_web_url = f"{config.ELASPIC2_URL}/jobs/213441783"
 
     mutation_info_list = [
         MutationInfo(

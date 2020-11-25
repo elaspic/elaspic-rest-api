@@ -9,7 +9,7 @@ MAX_N = 10000
 BATCH_SIZE = 100
 DATA_OFFSET = 30000
 
-REST_API_URL = config.SITE_URL + "/elaspic/api/1.0/"
+REST_API_URL = "http://elaspic-rest-api:8080/"
 
 
 with open(op.join(op.dirname(op.abspath(__file__)), "data", "cosmic_missing.tsv"), "r") as ifh:

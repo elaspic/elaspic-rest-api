@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 async def elaspic2_submit_loop(ds: js.DataStructures) -> None:
-    elaspic2_jobs_api = "https://elaspic.uc.r.appspot.com/jobs/"
+    elaspic2_jobs_api = f"{config.ELASPIC2_URL}/jobs/"
     loop = asyncio.get_running_loop()
     executor = ProcessPoolExecutor(1)
 
