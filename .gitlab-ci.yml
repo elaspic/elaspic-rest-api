@@ -97,7 +97,6 @@ test:
       --cov="${PKG_INSTALL_DIR}"
       --cov-config=pyproject.toml
       --color=yes
-      --envfile="${DOTENV_FILE}"
       "tests/"
     # Coverage
     - mkdir coverage
@@ -145,9 +144,15 @@ deploy:
   extends:
     - .configure
   script:
-    - anaconda -t $ANACONDA_TOKEN upload $CI_PROJECT_DIR/conda-bld/*/*.tar.bz2 -u ostrokach-forge --no-progress --force
-  only:
-    - tags
+    - >
+      BUILD_JOB_ID=$(
+        curl --globoff -sS --header "PRIVATE-TOKEN: ${GITLAB_CI_TOKEN}"
+          https://gitlab.com/api/v4/projects/22388857/pipelines/220812929/jobs?scope[]=success
+        | jq '.[] | select(.name == "build") | .id'
+      )
+    - echo $BUILD_JOB_ID
+  # only:
+  #   - tags
   dependencies:
     - build
 
