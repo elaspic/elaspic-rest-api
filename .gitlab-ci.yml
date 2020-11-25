@@ -102,8 +102,6 @@ test:
     # Coverage
     - mkdir coverage
     - mv .coverage coverage/.coverage.all
-  tags:
-    - local
   artifacts:
     paths:
       - coverage
