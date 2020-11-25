@@ -1,4 +1,5 @@
 import asyncio
+import os
 from pathlib import Path
 from typing import Dict
 from unittest.mock import patch
@@ -44,6 +45,7 @@ def _validate_protein_info(protein_info: Dict, mutation_info: MutationInfo):
         assert protein_info["ligand_sequence"]
 
 
+@pytest.mark.skipif("CI" in os.environ, reason="Test needs access to prod filesystem.")
 @pytest.mark.asyncio
 async def test_get_mutation_info_local():
     item = js.Item(
@@ -64,6 +66,7 @@ async def test_get_mutation_info_local():
         _validate_protein_info(protein_info, mutation_info)
 
 
+@pytest.mark.skipif("CI" in os.environ, reason="Test needs access to prod filesystem.")
 @pytest.mark.asyncio
 async def test_get_mutation_info_database():
     item = js.Item(
