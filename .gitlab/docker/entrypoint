@@ -32,10 +32,10 @@ chown elaspic:elaspic -R $HOME/.ssh
 
 # Activate the `base` conda environment.
 source /opt/conda/etc/profile.d/conda.sh
-conda activate base
+conda activate app
 
 # Copy script files
 /opt/conda/bin/$supkg elaspic python -m elaspic_rest_api --log-level debug copy-scripts
 
-# Run whatever the user wants.
+# Run whatever the user wants
 exec /opt/conda/bin/$supkg elaspic "$@"

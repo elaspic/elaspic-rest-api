@@ -21,6 +21,7 @@ variables:
   except:
     variables:
       - $UPDATE_PAGES
+      - $UPDATE_IMAGES
 
 .configure:
   extends:
@@ -138,23 +139,6 @@ docs:
 
 # === Deploy ===
 
-deploy:
-  stage: deploy
-  extends:
-    - .configure
-  script:
-    - >
-      BUILD_JOB_ID=$(
-        curl --globoff -sS --header "PRIVATE-TOKEN: ${GITLAB_CI_TOKEN}"
-          https://gitlab.com/api/v4/projects/22388857/pipelines/220812929/jobs?scope[]=success
-        | jq '.[] | select(.name == "build") | .id'
-      )
-    - echo $BUILD_JOB_ID
-  # only:
-  #   - tags
-  dependencies:
-    - build
-
 trigger-custom-pipelines:
   stage: deploy
   extends:
@@ -163,13 +147,27 @@ trigger-custom-pipelines:
     name: ubuntu:18.04
   before_script:
     - apt-get -y -qq update
-    - apt-get -y -qq install curl
+    - apt-get -y -qq install curl jq
   script:
+    - >
+      BUILD_JOB_ID=$(
+        curl --globoff -sS --header "PRIVATE-TOKEN: ${GITLAB_CI_TOKEN}"
+          https://gitlab.com/api/v4/projects/22388857/pipelines/220812929/jobs?scope[]=success
+        | jq '.[] | select(.name == "build") | .id'
+      )
+    - CONDA_BLD_ARCHIVE_URL=https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/jobs/$BUILD_JOB_ID/artifacts
     # Update pages
     - curl --request POST
       --form token="${CI_JOB_TOKEN}"
       --form ref=${CI_COMMIT_TAG}
       --form "variables[UPDATE_PAGES]=true"
+      https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/trigger/pipeline
+    # Update images
+    - curl --request POST
+      --form token="${CI_JOB_TOKEN}"
+      --form ref=${CI_COMMIT_TAG}
+      --form "variables[UPDATE_IMAGES]=true"
+      --form "variables[CONDA_BLD_ARCHIVE_URL]=true"
       https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/trigger/pipeline
   only:
     - tags
@@ -181,13 +179,13 @@ pages:
   before_script:
     - sudo yum update -y -q
     - sudo yum install -y -q unzip
-    - pip install -q jinja2 python-gitlab
+    - pip install jinja2 python-gitlab
   script:
     # Set environment variables
     - export OUTPUT_DIR="./public"
     - mkdir -p ${OUTPUT_DIR}
     # Download all previous docs
-    - python .gitlab/pages/download_docs.py
+    - python .ci/pages/download_docs.py
       --project-id ${CI_PROJECT_ID}
       --job-name docs
       --private-token ${CI_DOCS_TOKEN}
@@ -198,3 +196,23 @@ pages:
   only:
     variables:
       - $UPDATE_PAGES
+
+docker-images:
+  stage: custom
+  image:
+    name: docker:latest
+  services:
+    - docker:dind
+  script:
+    - if [[ ! -z ${CI_COMMIT_TAG} ]] ; then
+      IMAGE_TAG=${CI_COMMIT_TAG} ;
+      else
+      IMAGE_TAG="latest" ;
+      fi
+    - echo "${CI_REGISTRY_IMAGE}:${IMAGE_TAG}"
+    - docker login registry.gitlab.com -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker build -t "${CI_REGISTRY_IMAGE}:${IMAGE_TAG}" .ci/docker/
+    - docker push "${CI_REGISTRY_IMAGE}:${IMAGE_TAG}"
+  only:
+    variables:
+      - $UPDATE_IMAGES
