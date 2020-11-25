@@ -208,9 +208,13 @@ docker-images:
       else
       IMAGE_TAG="latest" ;
       fi
+    - if [[ ! -z ${BUILD_JOB_ID} ]] ; then
+        CONDA_BLD_ARCHIVE_URL="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/jobs/$BUILD_JOB_ID/artifacts" ;
+      else
+        CONDA_BLD_ARCHIVE_URL="https://gitlab.com/${CI_PROJECT_PATH}/-/jobs/artifacts/master/download?job=build" ;
+      fi
     - echo "${CI_REGISTRY_IMAGE}:${IMAGE_TAG}"
     - docker login registry.gitlab.com -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
-    - CONDA_BLD_ARCHIVE_URL="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/jobs/$BUILD_JOB_ID/artifacts"
     - docker build --build-arg CONDA_BLD_ARCHIVE_URL -t "${CI_REGISTRY_IMAGE}:${IMAGE_TAG}" .gitlab/docker/
     - docker push "${CI_REGISTRY_IMAGE}:${IMAGE_TAG}"
   only:
