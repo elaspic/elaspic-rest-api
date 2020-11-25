@@ -1,6 +1,5 @@
 # ELASPIC REST API
 
-[![conda](https://img.shields.io/conda/dn/ostrokach-forge/elaspic-rest-api.svg)](https://anaconda.org/ostrokach-forge/elaspic-rest-api/)
 [![docs](https://img.shields.io/badge/docs-v0.1.1-blue.svg)](https://elaspic.gitlab.io/elaspic-rest-api/v0.1.1/)
 [![pipeline status](https://gitlab.com/elaspic/elaspic-rest-api/badges/v0.1.1/pipeline.svg)](https://gitlab.com/elaspic/elaspic-rest-api/commits/v0.1.1/)
 [![coverage report](https://gitlab.com/elaspic/elaspic-rest-api/badges/v0.1.1/coverage.svg)](https://elaspic.gitlab.io/elaspic-rest-api/v0.1.1/htmlcov/)
