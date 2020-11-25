@@ -6,15 +6,11 @@ API_TOKEN = os.environ["API_TOKEN"]
 SLURM_MASTER_USER = os.environ["SLURM_MASTER_USER"]
 SLURM_MASTER_HOST = os.environ["SLURM_MASTER_HOST"]
 SENTRY_DSN = os.getenv("SENTRY_DSN")
-SITE_IP = os.getenv("SITE_IP", "0.0.0.0")
-SITE_PORT = os.getenv("SITE_PORT", 8080)
 
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 
 SITE_NAME = "ELASPIC"
-SITE_URL = "http://{}:{}".format(SITE_IP, SITE_PORT)
 PRODUCTION_SITE_URL = "http://elaspic.kimlab.org"
-
 ELASPIC_VERSION = "0.1.42"
 
 DB_NAME_ELASPIC = os.environ["DB_NAME_ELASPIC"]
