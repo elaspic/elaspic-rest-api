@@ -15,7 +15,6 @@ variables:
   PACKAGE_VERSION: "0.1.0"
   PYTHON_VERSION: "3.8"
 
-
 # === Configurations ===
 
 .skip-custom-pipelines:
@@ -77,7 +76,6 @@ build:
     paths:
       - conda-bld
 
-
 # === Test ===
 
 test:
@@ -101,10 +99,11 @@ test:
     # Coverage
     - mkdir coverage
     - mv .coverage coverage/.coverage.all
+  tags:
+    - local
   artifacts:
     paths:
       - coverage
-
 
 # === Document ===
 
