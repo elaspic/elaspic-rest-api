@@ -6,28 +6,47 @@
 
 ## Development
 
-```bash
-uvicorn elaspic_rest_api.app:app --host 0.0.0.0 --port 8000 --reload \
-    --log-level=debug --log-config .gitlab/docker/logconfig.ini --env-file .env
-```
+1. Build an `elaspic-rest-api` conda package.
+
+    ```bash
+    conda build .gitlab/conda
+    ```
+
+1. Create an `elaspic-rest-api` conda environment using the built package (this will automatically install all dependencies).
+
+    ```bash
+    conda create -n elaspic-rest-api --use-local elaspic-rest-api
+    ```
+
+1. (Optional) Install source package in development mode.
+
+    ```bash
+    conda activate elaspic-rest-api
+    pip install -e .
+    ```
+
+1. Start the development server.
+
+    ```bash
+    uvicorn elaspic_rest_api.app:app --host 0.0.0.0 --port 8000 --reload \
+        --log-level=debug --log-config .gitlab/docker/logconfig.ini --env-file .env
+    ```
 
 ## Deployment
 
-```bash
-docker run --tty --env-file .env --env HOST_USER_ID=9284 \
-    --env=GUNICORN_CMD_ARGS="--bind 0.0.0.0:8080 --workers 1" \
-    --volume /home/kimlab1/database_data/elaspic:/home/kimlab1/database_data/elaspic:rw \
-    affb2a451524
-```
+1. Build a Docker image.
 
-## Creating Docker image
+    ```bash
+    export CONDA_BLD_ARCHIVE_URL="https://gitlab.com/api/v4/projects/3259401/jobs/artifacts/master/download?job=build"
 
-```bash
-# For a private repo, you may need to set the CONDA_BLD_REQUEST_HEADER environment variable
-export CONDA_BLD_REQUEST_HEADER="PRIVATE-TOKEN: <your_access_token>"
+    docker build --build-arg CONDA_BLD_ARCHIVE_URL .gitlab/docker/
+    ```
 
-# Replate "870684925" with the ID of the build for which you want to create the image
-export CONDA_BLD_ARCHIVE_URL="https://gitlab.com/api/v4/projects/22388857/jobs/870684925/artifacts"
+1. Run the built Docker image.
 
-docker build --build-arg CONDA_BLD_ARCHIVE_URL .gitlab/docker/
-```
+    ```bash
+    docker run --tty --env-file .env --env HOST_USER_ID=9284 \
+        --env=GUNICORN_CMD_ARGS="--bind 0.0.0.0:8080 --workers 1" \
+        --volume /home/kimlab1/database_data/elaspic:/home/kimlab1/database_data/elaspic:rw \
+        registry.gitlab.com/elaspic/elaspic-rest-api:latest
+    ```
