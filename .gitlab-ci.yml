@@ -204,15 +204,15 @@ docker-images:
     - docker:dind
   script:
     - if [[ ! -z ${CI_COMMIT_TAG} ]] ; then
-      IMAGE_TAG=${CI_COMMIT_TAG} ;
+        IMAGE_TAG=${CI_COMMIT_TAG} ;
       else
-      IMAGE_TAG="latest" ;
+        IMAGE_TAG="latest" ;
       fi
     - echo "${CI_REGISTRY_IMAGE}:${IMAGE_TAG}"
     - if [[ ! -z ${BUILD_JOB_ID} ]] ; then
-        CONDA_BLD_ARCHIVE_URL="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/jobs/$BUILD_JOB_ID/artifacts" ;
+        export CONDA_BLD_ARCHIVE_URL="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/jobs/${BUILD_JOB_ID}/artifacts" ;
       else
-        CONDA_BLD_ARCHIVE_URL="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/jobs/artifacts/master/download\?job=build" ;
+        export CONDA_BLD_ARCHIVE_URL="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/jobs/artifacts/master/download?job=build" ;
       fi
     - echo ${CONDA_BLD_ARCHIVE_URL}
     - docker login registry.gitlab.com -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
