@@ -212,7 +212,7 @@ docker-images:
     - if [[ ! -z ${BUILD_JOB_ID} ]] ; then
         CONDA_BLD_ARCHIVE_URL="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/jobs/$BUILD_JOB_ID/artifacts" ;
       else
-        CONDA_BLD_ARCHIVE_URL="https://gitlab.com/${CI_PROJECT_PATH}/-/jobs/artifacts/master/download?job=build" ;
+        CONDA_BLD_ARCHIVE_URL="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/jobs/artifacts/master/download?job=build" ;
       fi
     - echo ${CONDA_BLD_ARCHIVE_URL}
     - docker login registry.gitlab.com -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
