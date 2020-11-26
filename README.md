@@ -28,6 +28,7 @@
 1. Start the development server.
 
     ```bash
+    conda activate elaspic-rest-api
     uvicorn elaspic_rest_api.app:app --host 0.0.0.0 --port 8000 --reload \
         --log-level=debug --log-config .gitlab/docker/logconfig.ini --env-file .env
     ```
