@@ -23,7 +23,7 @@ DB_CONNECTION_PARAMS = dict(host=DB_HOST, port=DB_PORT, user=DB_USER, password=D
 
 ELASPIC2_URL = os.environ["ELASPIC2_URL"]
 
-SCRIPTS_DIR = op.join(DATA_DIR, "scripts")
+SCRIPTS_DIR = op.join(DATA_DIR, "scripts_el2")
 
 # Jobsubmitter
 PROVEAN_LOCK_DIR = op.join(DATA_DIR, "locks", "sequence")
