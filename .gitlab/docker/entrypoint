@@ -35,7 +35,7 @@ source /opt/conda/etc/profile.d/conda.sh
 conda activate app
 
 # Copy script files (comment out so we don't break current installation when debugging)
-# /opt/conda/bin/$supkg elaspic python -m elaspic_rest_api --log-level debug copy-scripts
+/opt/conda/bin/$supkg elaspic python -m elaspic_rest_api --log-level debug copy-scripts
 
 # Run whatever the user wants
 exec /opt/conda/bin/$supkg elaspic "$@"
