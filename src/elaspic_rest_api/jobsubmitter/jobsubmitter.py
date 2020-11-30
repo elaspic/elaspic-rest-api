@@ -23,7 +23,7 @@ async def start_jobsubmitter(ds: js.DataStructures) -> Dict[str, asyncio.Task]:
     tasks["qstat"] = loop.create_task(js.qstat(ds.running_jobs))
     tasks["validation"] = loop.create_task(js.validation(ds))
     tasks["finalize_finished_submissions"] = loop.create_task(
-        js.finalize_finished_submissions(ds.monitored_jobs)
+        js.finalize_finished_submissions_loop(ds.monitored_jobs)
     )
     tasks["show_stats"] = loop.create_task(js.show_stats(ds))
 
