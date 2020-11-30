@@ -4,6 +4,12 @@
 [![pipeline status](https://gitlab.com/elaspic/elaspic-rest-api/badges/v0.1.4/pipeline.svg)](https://gitlab.com/elaspic/elaspic-rest-api/commits/v0.1.4/)
 [![coverage report](https://gitlab.com/elaspic/elaspic-rest-api/badges/v0.1.4/coverage.svg?job=docs)](https://elaspic.gitlab.io/elaspic-rest-api/v0.1.4/htmlcov/)
 
+## Overview
+
+<p align="center">
+<img src="docs/_static/workflow-diagram.svg" />
+</p>
+
 ## Development
 
 1. Build an `elaspic-rest-api` conda package.
