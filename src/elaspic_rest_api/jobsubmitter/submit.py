@@ -120,19 +120,19 @@ async def qsub(ds: js.DataStructures) -> None:
             logger.debug("job_id: %s", job_ids)
 
             if not job_ids:
-                js.restart_or_drop(item, ds.qsub_queue, system_command, result, error_message)
+                js.restart_or_drop(item, ds, system_command, result, error_message)
                 continue
 
             try:
                 job_id = job_ids[0]
             except ValueError:
-                js.restart_or_drop(item, ds.qsub_queue, system_command, result, error_message)
+                js.restart_or_drop(item, ds, system_command, result, error_message)
                 continue
 
             item.set_job_id(job_id)
             await ds.validation_queue.put(item)
         except Exception as e:
-            js.restart_or_drop(item, ds.qsub_queue, error_message=str(e))
+            js.restart_or_drop(item, ds, error_message=str(e))
             await asyncio.sleep(js.perf.SLEEP_FOR_ERROR)
 
         await asyncio.sleep(js.perf.SLEEP_FOR_QSUB)
