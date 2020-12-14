@@ -165,7 +165,6 @@ def drop_columns(df, column_dict):
     return df
 
 
-# %% Sequence
 def upload_sequence(unique_id, data_dir):
     """"""
     print("upload_sequence({}, {})".format(unique_id, data_dir))
@@ -215,7 +214,6 @@ def upload_sequence(unique_id, data_dir):
         connection.close()
 
 
-# %% Model
 def upload_model(unique_id, data_dir):
     """"""
     print("upload_model({}, {})".format(unique_id, data_dir))
@@ -334,7 +332,7 @@ def upload_model(unique_id, data_dir):
     return
 
 
-# %% Mutation
+
 def upload_mutation(unique_id, mutation, data_dir, elaspic_version=""):
     """"""
     print("upload_mutation({}, {}, {})".format(unique_id, mutation, data_dir))
@@ -363,7 +361,7 @@ def upload_mutation(unique_id, mutation, data_dir, elaspic_version=""):
         matrix_score=None,
         provean_score=None,
         ddg=None,
-        mut_date_modified=("", lambda: time.strftime("%Y-%m-%d %H:%M:%S")),
+        mut_date_modified=("", lambda: time.strftime("%Y-%m-%d")),
         elaspic_version=("", lambda: elaspic_version),
     )
     interface_mutation_columns = dict(
@@ -400,7 +398,7 @@ def upload_mutation(unique_id, mutation, data_dir, elaspic_version=""):
         matrix_score=None,
         provean_score=None,
         ddg=None,
-        mut_date_modified=("", lambda: time.strftime("%Y-%m-%d %H:%M:%S")),
+        mut_date_modified=("", lambda: time.strftime("%Y-%m-%d")),
         elaspic_version=("", lambda: elaspic_version),
     )
     # Load data
