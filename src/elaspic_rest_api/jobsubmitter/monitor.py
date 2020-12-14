@@ -20,10 +20,13 @@ validation_last_updated = 0.0
 async def show_stats(ds: js.DataStructures, tasks: Mapping[str, asyncio.Task]) -> None:
     while True:
         logger.info("*" * 50)
-        logger.info("{:40}{:10}".format("Submitted jobs:", len(running_jobs)))
-        logger.info("{:40}{:10}".format("validation_queue:", ds.validation_queue.qsize()))
-        logger.info("{:40}{:10}".format("qsub_queue:", ds.qsub_queue.qsize()))
         logger.info("{:40}{:10}".format("pre_qsub_queue:", ds.pre_qsub_queue.qsize()))
+        logger.info("{:40}{:10}".format("qsub_queue:", ds.qsub_queue.qsize()))
+        logger.info("{:40}{:10}".format("validation_queue:", ds.validation_queue.qsize()))
+        logger.info("{:40}{:10}".format("el2_pending_queue:", ds.elaspic2_pending_queue.qsize()))
+        logger.info("{:40}{:10}".format("el2_running_queue:", ds.elaspic2_running_queue.qsize()))
+        logger.info("{:40}{:10}".format("Submitted jobs:", len(running_jobs)))
+
         # logger.debug('precalculated: {}'.format(precalculated))
         logger.info("precalculated_cache: {}".format(ds.precalculated_cache))
         for task_name, task in tasks.items():
