@@ -80,4 +80,4 @@ async def on_shutdown() -> None:
 
 if config.SENTRY_DSN:
     sentry_sdk.init(config.SENTRY_DSN, traces_sample_rate=1.0)
-    app = SentryAsgiMiddleware(app)  # type: ignore
+    app = SentryAsgiMiddleware(app)
