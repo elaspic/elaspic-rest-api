@@ -126,7 +126,7 @@ async def qsub(ds: js.DataStructures) -> None:
                 continue
 
             try:
-                job_id = job_ids[0]
+                job_id = int(job_ids[0])
             except ValueError:
                 await js.restart_or_drop(item, ds, system_command, result, error_message)
                 continue
