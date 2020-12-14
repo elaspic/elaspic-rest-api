@@ -26,9 +26,13 @@ async def show_stats(ds: js.DataStructures, tasks: Mapping[str, asyncio.Task]) -
         logger.info("precalculated_cache: {}".format(ds.precalculated_cache))
         for task_name, task in tasks.items():
             is_done = task.done()
-            logger.info("{:40}{:10}".format(f"Task {task_name}:", "done" if is_done else "running"))
+            logger.info(
+                "{:40}{:>10}".format(f"Task {task_name}:", "done" if is_done else "running")
+            )
             if is_done:
-                task.exception()
+                error = task.exception()
+                if error is not None:
+                    raise error
         logger.info("*" * 50)
         await asyncio.sleep(js.perf.SLEEP_FOR_INFO)
 
