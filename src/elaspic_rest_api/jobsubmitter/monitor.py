@@ -11,6 +11,8 @@ from elaspic_rest_api import jobsubmitter as js
 
 logger = logging.getLogger(__name__)
 
+#: SLURM job ids of all running jobs
+running_jobs: Set = set()
 running_jobs_last_updated = 0.0
 validation_last_updated = 0.0
 
@@ -18,7 +20,7 @@ validation_last_updated = 0.0
 async def show_stats(ds: js.DataStructures, tasks: Mapping[str, asyncio.Task]) -> None:
     while True:
         logger.info("*" * 50)
-        logger.info("{:40}{:10}".format("Submitted jobs:", len(ds.running_jobs)))
+        logger.info("{:40}{:10}".format("Submitted jobs:", len(running_jobs)))
         logger.info("{:40}{:10}".format("validation_queue:", ds.validation_queue.qsize()))
         logger.info("{:40}{:10}".format("qsub_queue:", ds.qsub_queue.qsize()))
         logger.info("{:40}{:10}".format("pre_qsub_queue:", ds.pre_qsub_queue.qsize()))
@@ -40,7 +42,8 @@ async def show_stats(ds: js.DataStructures, tasks: Mapping[str, asyncio.Task]) -
         await asyncio.sleep(js.perf.SLEEP_FOR_INFO)
 
 
-async def qstat(running_jobs: Set):
+async def qstat():
+    global running_jobs
     global running_jobs_last_updated
     while True:
         logger.debug("squeue")
@@ -67,19 +70,21 @@ async def qstat(running_jobs: Set):
                 if x and x.split(" ")[0].isdigit()
             }
         )
+        logger.debug("running jobs: %s", running_jobs)
         running_jobs_last_updated = time.time()
         await asyncio.sleep(js.perf.SLEEP_FOR_QSTAT)
 
 
 async def validation(ds: js.DataStructures):
     """Validate finished jobs."""
+    global running_jobs
     global validation_last_updated
     while True:
+        logger.debug("validation")
         for _ in range(ds.validation_queue.qsize()):
-            logger.debug("validation")
             item = await ds.validation_queue.get()
-            if (item.start_time > running_jobs_last_updated) or (item.job_id in ds.running_jobs):
-                logger.debug("Job not ready for validation")
+            if (item.start_time > running_jobs_last_updated) or (item.job_id in running_jobs):
+                logger.debug("Job %s not ready for validation", item.job_id)
                 await ds.validation_queue.put(item)
                 await asyncio.sleep(js.perf.SLEEP_FOR_LOOP)
                 continue
@@ -91,6 +96,7 @@ async def validation(ds: js.DataStructures):
             if not validated:
                 await js.restart_or_drop(item, ds, system_command, result, error_message)
                 continue
+
             try:
                 await aiofiles.os.remove(item.lock_path)
                 logger.debug("Removed lock file for finished job %s", item.job_id)
@@ -100,6 +106,7 @@ async def validation(ds: js.DataStructures):
                     item.job_id,
                     item.lock_path,
                 )
+
             if item.run_type in ["sequence", "model"]:
                 ds.precalculated_cache[item.unique_id] = item.job_id
                 logger.debug("Added finished job %s to cache.", item.job_id)

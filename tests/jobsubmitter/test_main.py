@@ -15,7 +15,6 @@ async def test_main(data_in):
     assert ds.pre_qsub_queue.qsize() == num_mutations
     assert ds.qsub_queue.qsize() == num_proteins * 2
     assert ds.validation_queue.empty()
-    assert not ds.running_jobs
     assert len(ds.monitored_jobs) == 1
     job_key = js.JobKey(data_in.job_id, data_in.job_email)
     assert len(ds.monitored_jobs[job_key])

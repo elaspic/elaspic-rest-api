@@ -27,9 +27,6 @@ class DataStructures:
     #: Example: {JobKey(job_id=7, job_email=None): {"database.mutations.P0A921.A243R", ...}}
     monitored_jobs: Dict[JobKey, Set] = field(default_factory=dict)
 
-    #: SLURM job ids of all running jobs
-    running_jobs: Set[int] = field(default_factory=set)
-
     #: Persisted precalculated data
     #: Mapping from `unique_id` to `job_id`
     #: Example: {'database.model.68b8fe': 3880076, 'local.model.7a2dd6': 7625616, ...}
@@ -60,7 +57,7 @@ class Item:
     job_id: Optional[int]
 
     init_time: float
-    start_time: float
+    start_time: Optional[float]
 
     def __init__(self, run_type: str, args: Args) -> None:
         assert run_type in ["sequence", "model", "mutations"]
@@ -80,13 +77,13 @@ class Item:
             ]
         #
         self.job_id = None
-        self.start_time = time.time()
+        self.start_time = None
         self.stdout_path = None  # need_job_id
         self.stderr_path = None  # need job_id
         # ELASPIC2
         self.el2_mutation_info_list: List[MutationInfo] = []
 
-    def set_job_id(self, job_id):
+    def set_job_id(self, job_id: int) -> None:
         self.job_id = job_id
         self.start_time = time.time()
         self.stdout_path, self.stderr_path = get_log_paths(
