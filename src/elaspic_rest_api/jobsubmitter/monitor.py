@@ -2,7 +2,7 @@ import asyncio
 import logging
 import shlex
 import time
-from typing import Set, Tuple
+from typing import Mapping, Set, Tuple
 
 import aiofiles
 
@@ -15,7 +15,7 @@ running_jobs_last_updated = 0.0
 validation_last_updated = 0.0
 
 
-async def show_stats(ds: js.DataStructures) -> None:
+async def show_stats(ds: js.DataStructures, tasks: Mapping[str, asyncio.Task]) -> None:
     while True:
         logger.info("*" * 50)
         logger.info("{:40}{:10}".format("Submitted jobs:", len(ds.running_jobs)))
@@ -24,6 +24,11 @@ async def show_stats(ds: js.DataStructures) -> None:
         logger.info("{:40}{:10}".format("pre_qsub_queue:", ds.pre_qsub_queue.qsize()))
         # logger.debug('precalculated: {}'.format(precalculated))
         logger.info("precalculated_cache: {}".format(ds.precalculated_cache))
+        for task_name, task in tasks.items():
+            is_done = task.done()
+            logger.info("{:40}{:10}".format(f"Task {task_name}:", "done" if is_done else "running"))
+            if is_done:
+                task.exception()
         logger.info("*" * 50)
         await asyncio.sleep(js.perf.SLEEP_FOR_INFO)
 
@@ -81,9 +86,13 @@ async def validation(ds: js.DataStructures):
                 continue
             try:
                 await aiofiles.os.remove(item.lock_path)
-                logger.debug("Removed lock file for finished job %s.", item.job_id)
+                logger.debug("Removed lock file for finished job %s", item.job_id)
             except FileNotFoundError:
-                logger.debug("Failed to remove lock file for finished job %s.", item.job_id)
+                logger.debug(
+                    "Failed to remove lock file for finished job %s (lock file: %s)",
+                    item.job_id,
+                    item.lock_path,
+                )
             if item.run_type in ["sequence", "model"]:
                 ds.precalculated_cache[item.unique_id] = item.job_id
                 logger.debug("Added finished job %s to cache.", item.job_id)
