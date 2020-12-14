@@ -75,11 +75,12 @@ async def pre_qsub(ds: js.DataStructures) -> None:
             item = await ds.pre_qsub_queue.get()
             have_prereqs = js.check_prereqs(item.prereqs, ds.precalculated, ds.precalculated_cache)
             if not have_prereqs:
-                logger.debug("Waiting for prereqs: {}".format(item.prereqs))
                 restarting = abs(time.time() - item.init_time) < js.perf.JOB_TIMEOUT
                 if restarting:
+                    logger.debug("Waiting for prereqs: %s", item.prereqs)
                     await ds.pre_qsub_queue.put(item)
                 else:
+                    logger.debug("Waited for prereqs too long; cancelling: %s", item.prereqs)
                     await js.remove_from_monitored(item, ds.monitored_jobs)
                     await js.set_db_errors([item])
             else:
@@ -121,19 +122,19 @@ async def qsub(ds: js.DataStructures) -> None:
             logger.debug("job_id: %s", job_ids)
 
             if not job_ids:
-                js.restart_or_drop(item, ds, system_command, result, error_message)
+                await js.restart_or_drop(item, ds, system_command, result, error_message)
                 continue
 
             try:
                 job_id = job_ids[0]
             except ValueError:
-                js.restart_or_drop(item, ds, system_command, result, error_message)
+                await js.restart_or_drop(item, ds, system_command, result, error_message)
                 continue
 
             item.set_job_id(job_id)
             await ds.validation_queue.put(item)
         except Exception as e:
-            js.restart_or_drop(item, ds, error_message=str(e))
+            await js.restart_or_drop(item, ds, error_message=str(e))
             await asyncio.sleep(js.perf.SLEEP_FOR_ERROR)
 
         await asyncio.sleep(js.perf.SLEEP_FOR_QSUB)
