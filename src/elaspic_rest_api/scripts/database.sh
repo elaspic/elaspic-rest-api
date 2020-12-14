@@ -29,7 +29,7 @@ elaspic run \
     --pdb_dir='/home/kimlab1/database_data/pdb/data/data/structures/all/pdb/' \
     --blast_db_dir='/home/kimlab1/database_data/blast/db' \
     --archive_dir='/home/kimlab1/database_data/elaspic_v2/' \
-    --connection_string='mysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/elaspic' \
+    --connection_string="mysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/elaspic" \
     -u "${protein_id}" -m "${mutations}" -t ${elaspic_run_type}
 
 python "${SCRIPTS_DIR}/database.py" -u "${protein_id}" -m "${mutations}" -t ${run_type}
