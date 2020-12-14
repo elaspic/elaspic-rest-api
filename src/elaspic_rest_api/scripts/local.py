@@ -332,7 +332,6 @@ def upload_model(unique_id, data_dir):
     return
 
 
-
 def upload_mutation(unique_id, mutation, data_dir, elaspic_version=""):
     """"""
     print("upload_mutation({}, {}, {})".format(unique_id, mutation, data_dir))
