@@ -47,8 +47,6 @@ async def restart_or_drop(
 
 
 async def set_db_errors(error_queue):
-    logger.debug("set_db_errors: {}".format(error_queue))
-
     async def helper(cur, item):
         job_id = item.args["job_id"]
         protein_id = item.args["protein_id"]
@@ -73,9 +71,11 @@ async def set_db_errors(error_queue):
                     while not error_queue.empty():
                         item = await error_queue.get()
                         await helper(cur, item)
+                        logger.debug("set_db_errors for item %s", item)
                 else:
                     for item in error_queue:
                         await helper(cur, item)
+                        logger.debug("set_db_errors for item %s", item)
                 await conn.commit()
             except Exception as e:
                 logger.error(
