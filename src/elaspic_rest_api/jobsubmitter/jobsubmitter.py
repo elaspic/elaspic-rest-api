@@ -11,25 +11,23 @@ executor = ThreadPoolExecutor()
 
 
 async def start_jobsubmitter(ds: js.DataStructures) -> Dict[str, asyncio.Task]:
-    loop = asyncio.get_running_loop()
-
     tasks = {}
-    tasks["update_precalculated"] = loop.create_task(
+    tasks["update_precalculated"] = asyncio.create_task(
         js.update_precalculated(ds.precalculated), name="update_precalculated"
     )
-    tasks["persist_precalculated"] = loop.create_task(
+    tasks["persist_precalculated"] = asyncio.create_task(
         js.persist_precalculated(ds.precalculated, ds.precalculated_cache),
         name="persist_precalculated",
     )
-    tasks["pre_qsub"] = loop.create_task(js.pre_qsub(ds), name="pre_qsub")
-    tasks["qsub"] = loop.create_task(js.qsub(ds), name="qsub")
-    tasks["qstat"] = loop.create_task(js.qstat(ds.running_jobs), name="qstat")
-    tasks["validation"] = loop.create_task(js.validation(ds), name="validation")
-    tasks["finalize_finished_submissions"] = loop.create_task(
+    tasks["pre_qsub"] = asyncio.create_task(js.pre_qsub(ds), name="pre_qsub")
+    tasks["qsub"] = asyncio.create_task(js.qsub(ds), name="qsub")
+    tasks["qstat"] = asyncio.create_task(js.qstat(ds.running_jobs), name="qstat")
+    tasks["validation"] = asyncio.create_task(js.validation(ds), name="validation")
+    tasks["finalize_finished_submissions"] = asyncio.create_task(
         js.finalize_finished_submissions_loop(ds.monitored_jobs),
         name="finalize_finished_submissions_loop",
     )
-    tasks["show_stats"] = loop.create_task(js.show_stats(ds, tasks), name="show_stats")
+    tasks["show_stats"] = asyncio.create_task(js.show_stats(ds, tasks), name="show_stats")
 
     return tasks
 
