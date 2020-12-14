@@ -59,6 +59,9 @@ class Item:
     #: SLURM job id of the currently-running job
     job_id: Optional[int]
 
+    init_time: float
+    start_time: float
+
     def __init__(self, run_type: str, args: Args) -> None:
         assert run_type in ["sequence", "model", "mutations"]
         self.run_type = run_type
@@ -77,6 +80,7 @@ class Item:
             ]
         #
         self.job_id = None
+        self.start_time = time.time()
         self.stdout_path = None  # need_job_id
         self.stderr_path = None  # need job_id
         # ELASPIC2
@@ -88,6 +92,9 @@ class Item:
         self.stdout_path, self.stderr_path = get_log_paths(
             self.args["job_type"], self.job_id, self.args["protein_id"]
         )
+
+    def __str__(self) -> str:
+        return f"{self.job_id} {self.unique_id} {self.qsub_tries}"
 
 
 def get_unique_id(run_type: str, args: Args) -> str:
