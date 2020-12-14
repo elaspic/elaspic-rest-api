@@ -92,6 +92,7 @@ async def qsub(ds: js.DataStructures) -> None:
     """Submit jobs."""
     while True:
         item = await ds.qsub_queue.get()
+        logger.debug("qsub")
 
         if item.run_type in ["sequence", "model"] and (
             item.unique_id in ds.precalculated_cache or item.unique_id in ds.precalculated
