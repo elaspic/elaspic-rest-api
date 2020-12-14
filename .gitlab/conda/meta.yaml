@@ -18,7 +18,7 @@ requirements:
     # Webserver packages
     - aiofiles =0.5
     - aiohttp =3.7
-    - aiomysql =0.0.20
+    - aiomysql =0.0.21
     - bleach =3.2
     - fastapi =0.61
     - fire =0.3
