@@ -13,7 +13,7 @@ class Mutations(BaseModel):
 
 class DataIn(BaseModel):
     api_token: str
-    job_id: int
+    job_id: str
     job_type: str
     job_email: Optional[str]
     mutations: List[Mutations]
@@ -22,7 +22,7 @@ class DataIn(BaseModel):
         schema_extra = {
             "example": {
                 "api_token": "XXXXX",
-                "job_id": 1,
+                "job_id": "1abcde",
                 "job_type": "database",
                 "mutations": [
                     {
