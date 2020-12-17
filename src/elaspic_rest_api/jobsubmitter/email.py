@@ -71,7 +71,7 @@ def send_job_finished_email(job_id: str, job_email: str, send_type: str) -> bool
         {
             "JID": job_id,
             "SITE_NAME": config.SITE_NAME,
-            "SITE_URL": config.PRODUCTION_SITE_URL,
+            "SITE_URL": config.SITE_URL,
             "SUPPORT_EMAIL": config.ADMIN_EMAIL,
             "status": status,
         }

@@ -138,7 +138,8 @@ def extract_protein_info(mutation_info: MutationInfo) -> Dict:
         raise EL2Error(f"Mutation does not match extracted protein sequence: {mutation_info}.")
 
     structure_file_url = structure_file.as_posix().replace(
-        config.DATA_DIR, "http://elaspic.ccbr.proteinsolver.org/static"
+        config.DATA_DIR.rstrip("/") + "/",
+        config.SITE_URL.rstrip("/") + "/",
     )
     result = {
         **{
