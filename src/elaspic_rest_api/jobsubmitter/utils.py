@@ -18,7 +18,9 @@ async def restart_or_drop(
     result="unk",
     error_message="unk",
 ) -> None:
-    restarting = item.qsub_tries < 5 and abs(time.time() - item.start_time) < js.perf.JOB_TIMEOUT
+    restarting = item.qsub_tries < 5 and (
+        item.start_time is None or abs(time.time() - item.start_time) < js.perf.JOB_TIMEOUT
+    )
     logger.error(
         (
             "Error runing job '%s'. Num squb retries: %s. "
