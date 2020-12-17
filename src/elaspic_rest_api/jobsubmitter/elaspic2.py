@@ -3,6 +3,7 @@ import logging
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from urllib.parse import urljoin
 
 import aiohttp
 from kmbio import PDB
@@ -137,9 +138,9 @@ def extract_protein_info(mutation_info: MutationInfo) -> Dict:
     if protein_sequence[int(mutation_info.mutation[1:-1]) - 1] != mutation_info.mutation[0]:
         raise EL2Error(f"Mutation does not match extracted protein sequence: {mutation_info}.")
 
-    structure_file_url = structure_file.as_posix().replace(
-        config.DATA_DIR.rstrip("/") + "/",
-        config.SITE_URL.rstrip("/") + "/",
+    structure_file_url = urljoin(
+        config.SITE_URL,
+        Path(config.SITE_DATA_DIR).joinpath(structure_file.relative_to(config.DATA_DIR)).as_posix(),
     )
     result = {
         **{

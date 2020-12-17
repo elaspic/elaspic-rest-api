@@ -13,6 +13,7 @@ ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 SITE_NAME = "ELASPIC"
 SITE_URL = os.environ["SITE_URL"]
 ROOT_PATH = os.getenv("ROOT_PATH", "")
+SITE_DATA_DIR = os.getenv("SITE_DATA_DIR", DATA_DIR)
 
 ELASPIC_VERSION = "0.1.42"
 
