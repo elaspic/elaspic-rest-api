@@ -2,6 +2,7 @@ import os
 import os.path as op
 
 DATA_DIR = os.environ["DATA_DIR"]
+
 API_TOKEN = os.environ["API_TOKEN"]
 SLURM_MASTER_USER = os.environ["SLURM_MASTER_USER"]
 SLURM_MASTER_HOST = os.environ["SLURM_MASTER_HOST"]
@@ -10,7 +11,9 @@ SENTRY_DSN = os.getenv("SENTRY_DSN")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 
 SITE_NAME = "ELASPIC"
-PRODUCTION_SITE_URL = "http://elaspic.kimlab.org"
+PRODUCTION_SITE_URL = os.getenv("SITE_URL", "http://elaspic.kimlab.org")
+ROOT_PATH = os.getenv("ROOT_PATH", "")
+
 ELASPIC_VERSION = "0.1.42"
 
 DB_NAME_ELASPIC = os.environ["DB_NAME_ELASPIC"]

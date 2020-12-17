@@ -19,7 +19,10 @@ of mutations on protein stability and protein interaction affinity.s
 """
 
 app = FastAPI(
-    title="ELASPIC REST API", description=description, version=elaspic_rest_api.__version__
+    title="ELASPIC REST API",
+    description=description,
+    version=elaspic_rest_api.__version__,
+    root_path=config.ROOT_PATH,
 )
 
 js_data: Dict[str, Any] = {}
@@ -80,4 +83,4 @@ async def on_shutdown() -> None:
 
 if config.SENTRY_DSN:
     sentry_sdk.init(config.SENTRY_DSN, traces_sample_rate=1.0)
-    app = SentryAsgiMiddleware(app)
+    app = SentryAsgiMiddleware(app)  # type: ignore
