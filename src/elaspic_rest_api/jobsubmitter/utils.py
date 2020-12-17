@@ -33,7 +33,8 @@ async def restart_or_drop(
         error_message,
         "Restarting..." if restarting else "Too many restarts. Skipping...",
     )
-    js.email.send_admin_email(item, system_command, restarting)
+    if not restarting:
+        js.email.send_admin_email(item, system_command, restarting)
 
     try:
         await aiofiles.os.remove(item.lock_path)
