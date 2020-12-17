@@ -129,12 +129,12 @@ def get_lock_path(run_type: str, args: Args, finished: bool = False) -> str:
 def get_log_paths(job_type: str, job_id: str, protein_id: str):
     if job_type == "database":
         # Database
-        args = dict(data_dir=config.DATA_DIR, job_id=job_id)
+        args = dict(data_dir=config.SLURM_DATA_DIR, job_id=job_id)
         stdout_path = "{data_dir}/pbs-output/{job_id}.out".format(**args)
         stderr_path = "{data_dir}/pbs-output/{job_id}.err".format(**args)
     else:
         # Local
-        args = dict(data_dir=config.DATA_DIR, protein_id=protein_id, job_id=job_id)
+        args = dict(data_dir=config.SLURM_DATA_DIR, protein_id=protein_id, job_id=job_id)
         stdout_path = "{data_dir}/user_input/{protein_id}/pbs-output/{job_id}.out".format(**args)
         stderr_path = "{data_dir}/user_input/{protein_id}/pbs-output/{job_id}.err".format(**args)
     return stdout_path, stderr_path

@@ -25,7 +25,9 @@ def test_extract_protein_info(data_dir: Path, coi: COI):
     )
 
     class mock_config:
+        SITE_URL = "http://elaspic.kimlab.org"
         DATA_DIR = data_dir.as_posix()
+        SITE_DATA_DIR = DATA_DIR
 
     with patch("elaspic_rest_api.jobsubmitter.elaspic2.config", mock_config):
         protein_info = extract_protein_info(mutation_info)
