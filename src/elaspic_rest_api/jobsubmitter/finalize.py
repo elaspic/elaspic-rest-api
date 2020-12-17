@@ -60,7 +60,7 @@ async def finalize_mutation(item: js.Item):
                     FINALIZE_MUTATION_SQL, {"protein_id": args["protein_id"], "mutation": mutation}
                 )
         await conn.commit()
-    system_command = f'bash -c "rm -f "{config.SLURM_DATA_DIR}/locks/*/*.lock""'
+    system_command = f'bash -c "rm -f "{config.DATA_DIR}/locks/*/*.lock""'
     await asyncio.create_subprocess_exec(*shlex.split(system_command))
 
 
@@ -68,7 +68,7 @@ async def finalize_lingering_jobs(ds: js.DataStructures) -> None:
     await js.set_db_errors(ds.pre_qsub_queue)
     await js.set_db_errors(ds.qsub_queue)
     await js.set_db_errors(ds.validation_queue)
-    system_command = f'bash -c "rm -f "{config.SLURM_DATA_DIR}/locks/*/*.lock""'
+    system_command = f'bash -c "rm -f "{config.DATA_DIR}/locks/*/*.lock""'
     await asyncio.create_subprocess_exec(*shlex.split(system_command))
 
 

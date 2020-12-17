@@ -28,11 +28,10 @@ DB_CONNECTION_PARAMS = dict(host=DB_HOST, port=DB_PORT, user=DB_USER, password=D
 ELASPIC2_URL = os.environ["ELASPIC2_URL"]
 
 # Jobsubmitter
-SLURM_DATA_DIR = os.getenv("SLURM_DATA_DIR", DATA_DIR)
-SCRIPTS_DIR = op.join(SLURM_DATA_DIR, "scripts_el2")
-PROVEAN_LOCK_DIR = op.join(SLURM_DATA_DIR, "locks", "sequence")
-MODEL_LOCK_DIR = op.join(SLURM_DATA_DIR, "locks", "model")
-MUTATION_LOCK_DIR = op.join(SLURM_DATA_DIR, "locks", "mutation")
+SCRIPTS_DIR = op.join(DATA_DIR, "scripts_el2")
+PROVEAN_LOCK_DIR = op.join(DATA_DIR, "locks", "sequence")
+MODEL_LOCK_DIR = op.join(DATA_DIR, "locks", "model")
+MUTATION_LOCK_DIR = op.join(DATA_DIR, "locks", "mutation")
 
 # Email configuration
 EMAIL_USE_TLS = bool(os.getenv("EMAIL_USE_TLS"))
