@@ -87,7 +87,7 @@ async def validation(ds: js.DataStructures):
         for _ in range(ds.validation_queue.qsize()):
             item = await ds.validation_queue.get()
             if (item.start_time > running_jobs_last_updated) or (item.job_id in running_jobs):
-                logger.debug("Job %s not ready for validation", item.job_id)
+                # logger.debug("Job %s not ready for validation", item.job_id)
                 await ds.validation_queue.put(item)
                 await asyncio.sleep(js.perf.SLEEP_FOR_LOOP)
                 continue
