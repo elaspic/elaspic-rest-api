@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from urllib.parse import urljoin
 
 import pytest
 
@@ -14,7 +15,7 @@ from elaspic_rest_api.utils import mock_await, return_on_call
 @patch("elaspic_rest_api.jobsubmitter.elaspic2.js.finalize_mutation", mock_await)
 @patch("elaspic_rest_api.jobsubmitter.elaspic2.update_mutation_scores")
 async def test_elaspic2_collect_loop(mock_update_mutation_scores):
-    el2_web_url = f"{config.ELASPIC2_URL}/jobs/229764931"
+    el2_web_url = urljoin(config.ELASPIC2_URL, "/jobs/229764931")
 
     mutation_info_list = [
         MutationInfo(

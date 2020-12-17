@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 async def elaspic2_submit_loop(ds: js.DataStructures) -> None:
-    elaspic2_jobs_api = f"{config.ELASPIC2_URL}/jobs/"
+    elaspic2_jobs_api = urljoin(config.ELASPIC2_URL, "/jobs/")
     loop = asyncio.get_running_loop()
     executor = ProcessPoolExecutor(1)
 
@@ -75,9 +75,10 @@ async def elaspic2_collect_loop(ds: js.DataStructures) -> None:
                     await ds.elaspic2_running_queue.put(item)
                     continue
 
-                for mutation_info in item.el2_mutation_info_list:
-                    await session.delete(mutation_info.el2_web_url)
+                # for mutation_info in item.el2_mutation_info_list:
+                #     await session.delete(mutation_info.el2_web_url)
 
+                logger.debug("Mutation scores for job_id %s: %s", item.job_id, mutation_scores)
                 await update_mutation_scores(item, mutation_scores)
                 await js.finalize_mutation(item)
                 await js.remove_from_monitored(item, ds.monitored_jobs)
