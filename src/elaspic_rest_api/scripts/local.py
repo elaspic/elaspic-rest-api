@@ -63,7 +63,6 @@ UNLOCK TABLES;
 """
 
 
-# %% Helper functions
 def parse_args():
     """"""
     parser = argparse.ArgumentParser()
@@ -86,12 +85,16 @@ def apply_notnull(df, column, fn):
 
 def upload_data(connection, df, table_name):
     with connection.cursor() as cur:
-        columns = ",".join(df.columns)
-        db_command = "replace into {}.{} ({}) values ({});".format(
-            DB_SCHEMA, table_name, columns, ",".join(["%s" for _ in range(len(df.columns))])
-        )
-        print(db_command)
-        cur.executemany(db_command, [tuple(r) for r in df.to_records(index=False)])
+        cur.execute("SET FOREIGN_KEY_CHECKS=0;")
+        try:
+            columns = ",".join(df.columns)
+            db_command = "replace into {}.{} ({}) values ({});".format(
+                DB_SCHEMA, table_name, columns, ",".join(["%s" for _ in range(len(df.columns))])
+            )
+            print(db_command)
+            cur.executemany(db_command, [tuple(r) for r in df.to_records(index=False)])
+        finally:
+            cur.execute("SET FOREIGN_KEY_CHECKS=1;")
     connection.commit()
     print("Uploaded data.")
 
@@ -491,7 +494,6 @@ def upload_mutation(unique_id, mutation, data_dir, elaspic_version=""):
     return
 
 
-# %%
 if __name__ == "__main__":
     args = parse_args()
     validate_args(args)
