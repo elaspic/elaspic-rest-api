@@ -31,7 +31,7 @@ elaspic run \
     --archive_dir='/home/kimlab1/database_data/elaspic_v2/' \
     -p "${structure_file}" -s "${sequence_file}" -m "${mutations}" -n 3 -t ${elaspic_run_type}
 
-python "${SCRIPTS_DIR}/local.py" -u "${protein_id}" -m "${mutations}" -t ${run_type}
+python "${SCRIPTS_DIR}/local.py" -u "${protein_id}" -m "${mutations}" -t ${run_type} -r ${ELASPIC_VERSION}
 
 echo "Finished successfully!"
 

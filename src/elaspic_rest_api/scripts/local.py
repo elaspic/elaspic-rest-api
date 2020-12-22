@@ -504,6 +504,6 @@ if __name__ == "__main__":
         upload_model(args.unique_id, args.data_dir)
     elif args.run_type.startswith("mutation"):
         for mutation in args.mutations.split(","):
-            upload_mutation(args.unique_id, mutation, args.data_dir)
+            upload_mutation(args.unique_id, mutation, args.data_dir, args.elaspic_release)
     else:
         raise RuntimeError("Incorrent run_type: {}".format(args.run_type))
