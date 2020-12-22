@@ -15,7 +15,10 @@ logger = logging.getLogger(__name__)
 
 description = """\
 This page lists `ELASPIC` REST API endpoints that are available for evaluating the effect
-of mutations on protein stability and protein interaction affinity.s
+of mutations on protein stability and protein interaction affinity.
+
+Please see the source code repository for more information:
+<https://gitlab.com/elaspic/elaspic-rest-api/>.
 """
 
 app = FastAPI(
