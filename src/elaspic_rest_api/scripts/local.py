@@ -85,16 +85,16 @@ def apply_notnull(df, column, fn):
 
 def upload_data(connection, df, table_name):
     with connection.cursor() as cur:
-        cur.execute("SET FOREIGN_KEY_CHECKS=0;")
-        try:
-            columns = ",".join(df.columns)
-            db_command = "replace into {}.{} ({}) values ({});".format(
-                DB_SCHEMA, table_name, columns, ",".join(["%s" for _ in range(len(df.columns))])
-            )
-            print(db_command)
-            cur.executemany(db_command, [tuple(r) for r in df.to_records(index=False)])
-        finally:
-            cur.execute("SET FOREIGN_KEY_CHECKS=1;")
+        # cur.execute("SET FOREIGN_KEY_CHECKS=0;")
+        # try:
+        columns = ",".join(df.columns)
+        db_command = "replace into {}.{} ({}) values ({});".format(
+            DB_SCHEMA, table_name, columns, ",".join(["%s" for _ in range(len(df.columns))])
+        )
+        print(db_command)
+        cur.executemany(db_command, [tuple(r) for r in df.to_records(index=False)])
+        # finally:
+        #     cur.execute("SET FOREIGN_KEY_CHECKS=1;")
     connection.commit()
     print("Uploaded data.")
 

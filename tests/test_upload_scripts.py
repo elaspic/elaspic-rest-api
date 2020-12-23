@@ -65,7 +65,8 @@ def test_model(args):
         shlex.split(system_command), universal_newlines=True, stderr=subprocess.PIPE
     )
     logger.debug(sp.stderr)
-    assert "Cannot delete or update a parent row: a foreign key constraint fails" in sp.stderr
+    sp.check_returncode()
+    # assert "Cannot delete or update a parent row: a foreign key constraint fails" in sp.stderr
 
 
 def test_mutations(args):
