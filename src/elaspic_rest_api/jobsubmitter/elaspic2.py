@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from concurrent.futures import ProcessPoolExecutor
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import urljoin
@@ -158,7 +159,16 @@ def extract_protein_info(mutation_info: MutationInfo) -> Dict:
 def _extract_chain_sequences(
     structure_file: Path, chain_id: str, coi: COI, remove_hetatms=True
 ) -> Tuple[Optional[str], Optional[str]]:
-    structure = PDB.load(structure_file)
+    @contextmanager
+    def disable_logger(logger, level=logging.WARNING):
+        try:
+            logger.setLevel(level)
+            yield
+        finally:
+            logger.setLevel(logging.NOTSET)
+
+    with disable_logger(logging.getLogger("kmbio.PDB.core.atom")):
+        structure = PDB.load(structure_file)
     unknown_residue_marker = "" if remove_hetatms else "X"
     protein_sequence = None
     ligand_sequence = None
