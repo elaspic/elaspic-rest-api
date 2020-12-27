@@ -18,7 +18,7 @@ update elaspic_webserver.elaspic_core_mutation_local mut
 set mut.protbert_core = %(protbert_score)s,
     mut.proteinsolver_core = %(proteinsolver_score)s,
     mut.el2core = %(el2_score)s,
-    mut.el2_version = %(elaspic2_version)s
+    mut.el2_version = %(el2_version)s
 where domain_id = %(domain_or_interface_id)s and protein_id = %(protein_id)s
     and mutation = %(mutation)s;
 """
@@ -35,7 +35,7 @@ update elaspic_webserver.elaspic_interface_mutation_local mut
 set mut.protbert_core = %(protbert_score)s,
     mut.proteinsolver_core = %(proteinsolver_score)s,
     mut.el2core = %(el2_score)s,
-    mut.el2_version = %(elaspic2_version)s
+    mut.el2_version = %(el2_version)s
 where interface_id = %(domain_or_interface_id)s and protein_id = %(protein_id)s
     and mutation = %(mutation)s;
 """
@@ -54,7 +54,7 @@ update elaspic.uniprot_domain_mutation mut
 set mut.protbert_core = %(protbert_score)s,
     mut.proteinsolver_core = %(proteinsolver_score)s,
     mut.el2core = %(el2_score)s,
-    mut.el2_version = %(elaspic2_version)s
+    mut.el2_version = %(el2_version)s
 where uniprot_domain_id = %(domain_or_interface_id)s and uniprot_id = %(protein_id)s
     and mutation = %(mutation)s;
 """
@@ -73,7 +73,7 @@ update elaspic.uniprot_domain_pair_mutation mut
 set mut.protbert_core = %(protbert_score)s,
     mut.proteinsolver_core = %(proteinsolver_score)s,
     mut.el2core = %(el2_score)s,
-    mut.el2_version = %(elaspic2_version)s
+    mut.el2_version = %(el2_version)s
 where uniprot_domain_pair_id = %(domain_or_interface_id)s and protein_id = %(protein_id)s
     and mutation = %(mutation)s;
 """
