@@ -81,8 +81,7 @@ where uniprot_domain_pair_id = %(domain_or_interface_id)s and protein_id = %(pro
 
 async def get_mutation_info(item: js.Item) -> List[MutationInfo]:
     args = item.args
-    kwargs = {"protein_id": args["protein_id"], "mutation": args["mutations"]}
-    assert "," not in kwargs["mutation"]
+    kwargs = {"protein_id": args["protein_id"], "mutation": _format_mutation(args["mutations"])}
 
     if args["job_type"] == "local":
         core_mutation_sql = get_core_mutation_local_sql
@@ -110,8 +109,7 @@ async def get_mutation_info(item: js.Item) -> List[MutationInfo]:
 
 async def update_mutation_scores(item: js.Item, mutation_scores: List[MutationScores]) -> None:
     args = item.args
-    kwargs = {"protein_id": args["protein_id"], "mutation": args["mutations"]}
-    assert "," not in kwargs["mutation"]
+    kwargs = {"protein_id": args["protein_id"], "mutation": _format_mutation(args["mutations"])}
 
     if args["job_type"] == "local":
         core_mutation_sql = update_core_mutation_local_sql
@@ -137,3 +135,10 @@ async def update_mutation_scores(item: js.Item, mutation_scores: List[MutationSc
                     logger.error(
                         "Unexpected number of rows modified when updating database: %s.", row_count
                     )
+
+
+def _format_mutation(mutation: str) -> str:
+    assert "," not in mutation
+    if "_" in mutation:
+        mutation = mutation.split("_")[-1]
+    return mutation
