@@ -8,7 +8,10 @@ logger = logging.getLogger(__name__)
 
 # Local core
 get_core_mutation_local_sql = """\
-select domain_id, model_filename_wt, chain_modeller, mutation_modeller
+select domain_id as domain_or_interface_id,
+    model_filename_wt,
+    chain_modeller,
+    mutation_modeller
 from elaspic_webserver.elaspic_core_mutation_local
 where protein_id = %(protein_id)s and mutation = %(mutation)s;
 """
@@ -25,7 +28,10 @@ where domain_id = %(domain_or_interface_id)s and protein_id = %(protein_id)s
 
 # Local interface
 get_interface_mutation_local_sql = """\
-select interface_id, model_filename_wt, chain_modeller, mutation_modeller
+select interface_id as domain_or_interface_id,
+    model_filename_wt,
+    chain_modeller,
+    mutation_modeller
 from elaspic_webserver.elaspic_interface_mutation_local
 where protein_id = %(protein_id)s and mutation = %(mutation)s;
 """
@@ -42,8 +48,10 @@ where interface_id = %(domain_or_interface_id)s and protein_id = %(protein_id)s
 
 # Database core
 get_core_mutation_database_sql = """\
-SELECT d.uniprot_domain_id, CONCAT(d.path_to_data, mut.model_filename_wt) as model_filename_wt,
-mut.chain_modeller, mut.mutation_modeller
+SELECT d.uniprot_domain_id as domain_or_interface_id,
+    CONCAT(d.path_to_data, mut.model_filename_wt) as model_filename_wt,
+    mut.chain_modeller,
+    mut.mutation_modeller
 FROM elaspic.uniprot_domain_mutation mut
 JOIN elaspic.uniprot_domain d USING (uniprot_domain_id)
 WHERE mut.uniprot_id = %(protein_id)s AND mutation = %(mutation)s;
@@ -61,8 +69,10 @@ where uniprot_domain_id = %(domain_or_interface_id)s and uniprot_id = %(protein_
 
 # Database interface
 get_interface_mutation_database_sql = """\
-SELECT d.uniprot_domain_pair_id, CONCAT(d.path_to_data, mut.model_filename_wt) as model_filename_wt,
-mut.chain_modeller, mut.mutation_modeller
+SELECT d.uniprot_domain_pair_id as domain_or_interface_id,
+    CONCAT(d.path_to_data, mut.model_filename_wt) as model_filename_wt,
+    mut.chain_modeller,
+    mut.mutation_modeller
 FROM elaspic.uniprot_domain_pair_mutation mut
 JOIN elaspic.uniprot_domain_pair d USING (uniprot_domain_pair_id)
 WHERE mut.uniprot_id = %(protein_id)s AND mutation = %(mutation)s;
