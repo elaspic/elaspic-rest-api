@@ -9,7 +9,7 @@ import pytest
 from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
 from elaspic_rest_api.jobsubmitter.elaspic2 import extract_protein_info, resolve_mutation_info
-from elaspic_rest_api.jobsubmitter.elaspic2db import get_mutation_info
+from elaspic_rest_api.jobsubmitter.elaspic2db import get_mutation_info, update_mutation_scores
 from elaspic_rest_api.jobsubmitter.elaspic2types import COI, MutationInfo
 
 
@@ -93,3 +93,62 @@ async def test_get_mutation_info_database():
         assert Path(config.DATA_DIR).joinpath(mutation_info.structure_file).is_file()
         protein_info = extract_protein_info(mutation_info)
         _validate_protein_info(protein_info, mutation_info)
+
+
+def log_to_exception(*args) -> None:
+    raise Exception(args[0] % args[1:])
+
+
+@patch("elaspic_rest_api.jobsubmitter.elaspic2db.logger.error", log_to_exception)
+@pytest.mark.asyncio
+async def test_update_mutation_scores_local(data_dir: Path):
+    reference = [
+        MutationInfo(
+            domain_or_interface_id=11750,
+            structure_file="unused/mdm2-peptide/inputA_0--G33A/inputA_0--G33A-wt.pdb",
+            chain_id="A",
+            mutation="G33A",
+            protein_id="mdm2-peptide",
+            coi=COI.CORE,
+            el2_web_url="https://elaspic2-api.proteinsolver.org/jobs/234899688/",
+        ),
+        MutationInfo(
+            domain_or_interface_id=4882,
+            structure_file="unused/mdm2-peptide/inputA_0-inputB_1-G33A/inputA_0-inputB_1-G33A-wt.pdb",
+            chain_id="A",
+            mutation="G33A",
+            protein_id="mdm2-peptide",
+            coi=COI.INTERFACE,
+            el2_web_url="https://elaspic2-api.proteinsolver.org/jobs/234899717/",
+        )
+    ]
+    mutation_info_list = [
+        # First set everything to 0
+        reference[0]._replace(
+            protbert_score=0.0,
+            proteinsolver_score=0.0,
+            el2_score=0.0,
+            el2_version="",
+        ),
+        reference[1]._replace(
+            protbert_score=0.0,
+            proteinsolver_score=0.0,
+            el2_score=0.0,
+            el2_version="0",
+        ),
+        # Then set everything back to actual values
+        reference[0]._replace(
+            protbert_score=0.007627921178936958,
+            proteinsolver_score=0.14106684923171997,
+            el2_score=0.020919730409294984,
+            el2_version="0.1.13",
+        ),
+        reference[1]._replace(
+            protbert_score=0.006903011351823807,
+            proteinsolver_score=0.8102158680558205,
+            el2_score=-0.4328730274441723,
+            el2_version="0.1.13",
+        ),
+    ]
+
+    await update_mutation_scores("local", mutation_info_list)
