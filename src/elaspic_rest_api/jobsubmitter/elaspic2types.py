@@ -12,14 +12,13 @@ class MutationInfo(NamedTuple):
     structure_file: str
     chain_id: str
     mutation: str
+    protein_id: str
     coi: COI
+    # Results
     el2_web_url: Optional[str] = None
-
-
-class MutationScores(NamedTuple):
-    protbert_score: float
-    proteinsolver_score: float
-    el2_score: float
+    protbert_score: Optional[float] = None
+    proteinsolver_score: Optional[float] = None
+    el2_score: Optional[float] = None
     el2_version: str = "0.1.13"
 
 

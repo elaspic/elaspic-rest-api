@@ -21,6 +21,7 @@ def test_extract_protein_info(data_dir: Path, coi: COI):
         structure_file=structure_file.as_posix(),
         chain_id="B",
         mutation="E1A",
+        protein_id="test-local",
         coi=coi,
     )
 

@@ -5,7 +5,7 @@ import pytest
 
 from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
-from elaspic_rest_api.jobsubmitter.elaspic2types import COI, MutationInfo, MutationScores
+from elaspic_rest_api.jobsubmitter.elaspic2types import COI, MutationInfo
 from elaspic_rest_api.utils import mock_await, return_on_call
 
 
@@ -23,6 +23,7 @@ async def test_elaspic2_collect_loop(mock_update_mutation_scores):
             structure_file="1MFG.pdb",
             chain_id="A",
             mutation="G1A",
+            protein_id="1mfg-local",
             coi=COI.CORE,
             el2_web_url=el2_web_url,
         ),
@@ -31,18 +32,19 @@ async def test_elaspic2_collect_loop(mock_update_mutation_scores):
             structure_file="1MFG.pdb",
             chain_id="A",
             mutation="G1A",
+            protein_id="1mfg-local",
             coi=COI.INTERFACE,
             el2_web_url=el2_web_url,
         ),
     ]
 
-    mutation_scores_list = [
-        MutationScores(
+    mutation_info_wscores_list = [
+        mutation_info_list[0]._replace(
             protbert_score=0.011648587882518768,
             proteinsolver_score=0.7335909865796566,
             el2_score=0.3672627929817027,
         ),
-        MutationScores(
+        mutation_info_list[1]._replace(
             protbert_score=0.019379954785108566,
             proteinsolver_score=0.6837433353066444,
             el2_score=-0.969817502829359,
@@ -66,4 +68,4 @@ async def test_elaspic2_collect_loop(mock_update_mutation_scores):
     with return_on_call("elaspic_rest_api.jobsubmitter.elaspic2.asyncio.sleep"):
         await js.elaspic2_collect_loop(ds)
 
-    mock_update_mutation_scores.assert_called_once_with(item, mutation_scores_list)
+    mock_update_mutation_scores.assert_called_once_with(item, mutation_info_wscores_list)

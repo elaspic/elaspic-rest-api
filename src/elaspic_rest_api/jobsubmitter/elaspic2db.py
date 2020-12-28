@@ -2,7 +2,7 @@ import logging
 from typing import List, Tuple
 
 from elaspic_rest_api import jobsubmitter as js
-from elaspic_rest_api.jobsubmitter.elaspic2types import COI, MutationInfo, MutationScores
+from elaspic_rest_api.jobsubmitter.elaspic2types import COI, MutationInfo
 
 logger = logging.getLogger(__name__)
 
@@ -99,15 +99,38 @@ async def get_mutation_info(item: js.Item) -> List[MutationInfo]:
             await cur.execute(interface_mutation_sql, kwargs)
             interface_mutation_values: List[Tuple[int, str, str, str]] = await cur.fetchall()
 
-    mutation_info_list = (
-        #
-        [MutationInfo(*values, COI.CORE) for values in core_mutation_values]
-        + [MutationInfo(*values, COI.INTERFACE) for values in interface_mutation_values]
+    mutation_info_list = [
+        MutationInfo(
+            domain_or_interface_id=domain_id,
+            structure_file=structure_file,
+            chain_id=chain_id,
+            mutation=mutation,
+            protein_id=kwargs["protein_id"],
+            coi=COI.CORE,
+        )
+        for (domain_id, structure_file, chain_id, mutation) in core_mutation_values
+    ] + [
+        MutationInfo(
+            domain_or_interface_id=interface_id,
+            structure_file=structure_file,
+            chain_id=chain_id,
+            mutation=mutation,
+            protein_id=kwargs["protein_id"],
+            coi=COI.INTERFACE,
+        )
+        for (interface_id, structure_file, chain_id, mutation) in interface_mutation_values
+    ]
+
+    logger.info(
+        "Obtained the following mutation data for item %s (%s): %s",
+        item,
+        kwargs,
+        mutation_info_list,
     )
     return mutation_info_list
 
 
-async def update_mutation_scores(item: js.Item, mutation_scores: List[MutationScores]) -> None:
+async def update_mutation_scores(item: js.Item, mutation_scores: List[MutationInfo]) -> None:
     args = item.args
     kwargs = {"protein_id": args["protein_id"], "mutation": _format_mutation(args["mutations"])}
 

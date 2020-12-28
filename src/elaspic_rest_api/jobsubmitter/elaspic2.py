@@ -13,7 +13,7 @@ from kmtools import structure_tools
 from elaspic_rest_api import config
 from elaspic_rest_api import jobsubmitter as js
 from elaspic_rest_api.jobsubmitter.elaspic2db import get_mutation_info, update_mutation_scores
-from elaspic_rest_api.jobsubmitter.elaspic2types import COI, EL2Error, MutationInfo, MutationScores
+from elaspic_rest_api.jobsubmitter.elaspic2types import COI, EL2Error, MutationInfo
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ async def elaspic2_collect_loop(ds: js.DataStructures) -> None:
                             logger.error("Failed to retrieve ELASPIC2 status with error: %s.", e)
                             is_finished = False
                             break
-                    mutation_score = job_result_to_mutation_scores(job_result[0], mutation_info.coi)
+                    mutation_score = job_result_to_mutation_scores(mutation_info, job_result[0])
                     mutation_scores.append(mutation_score)
 
                 if not is_finished:
@@ -86,20 +86,19 @@ async def elaspic2_collect_loop(ds: js.DataStructures) -> None:
             await asyncio.sleep(30)
 
 
-def job_result_to_mutation_scores(job_result: Dict, coi: COI) -> MutationScores:
-    if coi == COI.CORE:
-        mutation_score = MutationScores(
+def job_result_to_mutation_scores(mutation_info: MutationInfo, job_result: Dict) -> MutationInfo:
+    if mutation_info.coi == COI.CORE:
+        return mutation_info._replace(
             protbert_score=job_result["protbert_core"],
             proteinsolver_score=job_result["proteinsolver_core"],
             el2_score=job_result["el2core"],
         )
     else:
-        mutation_score = MutationScores(
+        return mutation_info._replace(
             protbert_score=job_result["protbert_interface"],
             proteinsolver_score=job_result["proteinsolver_interface"],
             el2_score=job_result["el2interface"],
         )
-    return mutation_score
 
 
 def resolve_mutation_info(mutation_info_list: List[MutationInfo]) -> List[MutationInfo]:
