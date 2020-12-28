@@ -68,4 +68,6 @@ async def test_elaspic2_collect_loop(mock_update_mutation_scores):
     with return_on_call("elaspic_rest_api.jobsubmitter.elaspic2.asyncio.sleep"):
         await js.elaspic2_collect_loop(ds)
 
-    mock_update_mutation_scores.assert_called_once_with(item, mutation_info_wscores_list)
+    mock_update_mutation_scores.assert_called_once_with(
+        item.args["job_type"], mutation_info_wscores_list
+    )

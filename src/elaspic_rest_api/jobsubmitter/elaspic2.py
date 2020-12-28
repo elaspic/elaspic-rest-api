@@ -79,8 +79,7 @@ async def elaspic2_collect_loop(ds: js.DataStructures) -> None:
                 for mutation_info in item.el2_mutation_info_list:
                     await session.delete(mutation_info.el2_web_url)
 
-                logger.debug("Mutation scores for job_id %s: %s", item.job_id, mutation_scores)
-                await update_mutation_scores(item, mutation_scores)
+                await update_mutation_scores(item.args["job_type"], mutation_scores)
                 await js.finalize_mutation(item)
                 await js.remove_from_monitored(item, ds.monitored_jobs)
             await asyncio.sleep(30)

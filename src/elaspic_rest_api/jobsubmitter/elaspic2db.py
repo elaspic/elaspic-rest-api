@@ -140,34 +140,46 @@ async def get_mutation_info(item: js.Item) -> List[MutationInfo]:
     return mutation_info_list
 
 
-async def update_mutation_scores(item: js.Item, mutation_scores: List[MutationInfo]) -> None:
-    args = item.args
-    kwargs = {"protein_id": args["protein_id"], "mutation": _format_mutation(args["mutations"])}
+async def update_mutation_scores(job_type: str, mutation_scores: List[MutationInfo]) -> None:
+    if job_type not in ["local", "database"]:
+        raise ValueError
 
-    if args["job_type"] == "local":
+    required_attributes = [
+        "domain_or_interface_id",
+        "protein_id",
+        "mutation",
+        "protbert_score",
+        "proteinsolver_score",
+        "el2_score",
+        "el2_version",
+    ]
+
+    if job_type == "local":
         core_mutation_sql = update_core_mutation_local_sql
         interface_mutation_sql = update_interface_mutation_local_sql
     else:
-        assert args["job_type"] == "database"
+        assert job_type == "database"
         core_mutation_sql = update_core_mutation_database_sql
         interface_mutation_sql = update_interface_mutation_database_sql
 
     async with js.WDBConnection() as conn:
         async with conn.cursor() as cur:
             for mutation_score in mutation_scores:
-                await cur.execute(core_mutation_sql, {**kwargs, **mutation_score._asdict()})
-                row_count = await cur.rowcount()
-                if row_count != 1:
-                    logger.error(
-                        "Unexpected number of rows modified when updating database: %s.", row_count
-                    )
+                if mutation_score.coi == COI.CORE:
+                    update_mutation_sql = core_mutation_sql
+                else:
+                    update_mutation_sql = interface_mutation_sql
 
-                await cur.execute(interface_mutation_sql, {**kwargs, **mutation_score._asdict()})
-                row_count = await cur.rowcount()
-                if row_count != 1:
+                await cur.execute(
+                    update_mutation_sql,
+                    {key: getattr(mutation_score, key) for key in required_attributes},
+                )
+                if cur.rowcount != 1:
                     logger.error(
-                        "Unexpected number of rows modified when updating database: %s.", row_count
+                        "Unexpected number of rows modified when updating database: %s.",
+                        cur.rowcount,
                     )
+        await conn.commit()
 
 
 def _format_mutation(mutation: str) -> str:
