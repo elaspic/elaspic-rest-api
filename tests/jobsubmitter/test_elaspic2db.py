@@ -120,7 +120,7 @@ async def test_update_mutation_scores_local(data_dir: Path):
             protein_id="mdm2-peptide",
             coi=COI.INTERFACE,
             el2_web_url="https://elaspic2-api.proteinsolver.org/jobs/234899717/",
-        )
+        ),
     ]
     mutation_info_list = [
         # First set everything to 0
