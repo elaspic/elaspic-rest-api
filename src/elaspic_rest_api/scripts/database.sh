@@ -26,7 +26,7 @@ echo `hostname`
 # source activate elaspic
 export PATH="/home/kimlab1/jobsubmitter/anaconda3/envs/elaspic$([[ -z ${ELASPIC_VERSION} ]] || echo "-${ELASPIC_VERSION}")/bin:$PATH"
 elaspic run \
-    --pdb_dir='/home/kimlab1/database_data/pdb/data/data/structures/all/pdb/' \
+    --pdb_dir='/home/kimlab1/database_data/pdb/ftp/data/structures/divided/pdb/' \
     --blast_db_dir='/home/kimlab1/database_data/blast/db' \
     --archive_dir='/home/kimlab1/database_data/elaspic_v2/' \
     --connection_string="mysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/elaspic" \
