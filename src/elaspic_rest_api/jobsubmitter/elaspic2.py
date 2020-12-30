@@ -127,8 +127,19 @@ def extract_protein_info(mutation_info: MutationInfo) -> Dict:
     if config.DATA_DIR not in structure_file.as_posix():
         raise EL2Error(f"Structure file is not available remotely for mutation: {mutation_info}.")
 
+    @contextmanager
+    def disable_logger(logger, level=logging.WARNING):
+        try:
+            logger.setLevel(level)
+            yield
+        finally:
+            logger.setLevel(logging.NOTSET)
+
+    with disable_logger(logging.getLogger("kmbio.PDB.core.atom")):
+        structure = PDB.load(structure_file)
+
     protein_sequence, ligand_sequence = _extract_chain_sequences(
-        structure_file, mutation_info.chain_id, mutation_info.coi
+        structure, mutation_info.chain_id, mutation_info.coi
     )
 
     if protein_sequence is None:
@@ -146,7 +157,9 @@ def extract_protein_info(mutation_info: MutationInfo) -> Dict:
         **{
             "protein_structure_url": structure_file_url,
             "protein_sequence": protein_sequence,
-            "mutations": mutation_info.mutation,
+            "mutations": map_mutation_to_chain(
+                structure, mutation_info.chain_id, mutation_info.mutation
+            ),
         },
         **({"ligand_sequence": ligand_sequence} if ligand_sequence is not None else {}),
     }
@@ -155,18 +168,8 @@ def extract_protein_info(mutation_info: MutationInfo) -> Dict:
 
 
 def _extract_chain_sequences(
-    structure_file: Path, chain_id: str, coi: COI, remove_hetatms=True
+    structure: PDB.Structure, chain_id: str, coi: COI, remove_hetatms=True
 ) -> Tuple[Optional[str], Optional[str]]:
-    @contextmanager
-    def disable_logger(logger, level=logging.WARNING):
-        try:
-            logger.setLevel(level)
-            yield
-        finally:
-            logger.setLevel(logging.NOTSET)
-
-    with disable_logger(logging.getLogger("kmbio.PDB.core.atom")):
-        structure = PDB.load(structure_file)
     unknown_residue_marker = "" if remove_hetatms else "X"
     protein_sequence = None
     ligand_sequence = None
@@ -179,3 +182,19 @@ def _extract_chain_sequences(
         elif coi == COI.INTERFACE and ligand_sequence is None and chain_sequence:
             ligand_sequence = chain_sequence
     return protein_sequence, ligand_sequence
+
+
+def map_mutation_to_chain(structure: PDB.Structure, chain_id: str, mutation: str) -> str:
+    df = structure.to_dataframe()
+    chain_df = df[df["chain_id"] == chain_id]
+
+    residue_idx_map = {
+        old_residue_idx: new_residue_idx
+        for (old_residue_idx, new_residue_idx) in zip(
+            chain_df["residue_idx"], chain_df["residue_idx"] - chain_df["residue_idx"].min()
+        )
+    }
+
+    pos = int(mutation[1:-1])
+    pos_new = residue_idx_map[pos - 1] + 1
+    return f"{mutation[0]}{pos_new}{mutation[-1]}"
