@@ -84,7 +84,7 @@ set mut.protbert_score = %(protbert_score)s,
     mut.proteinsolver_score = %(proteinsolver_score)s,
     mut.el2_score = %(el2_score)s,
     mut.el2_version = %(el2_version)s
-where uniprot_domain_pair_id = %(domain_or_interface_id)s and protein_id = %(protein_id)s
+where uniprot_domain_pair_id = %(domain_or_interface_id)s and uniprot_id = %(protein_id)s
     and mutation_modeller = %(mutation)s;
 """
 
