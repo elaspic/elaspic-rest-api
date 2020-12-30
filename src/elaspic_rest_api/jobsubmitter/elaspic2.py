@@ -141,12 +141,13 @@ def extract_protein_info(mutation_info: MutationInfo) -> Dict:
     protein_sequence, ligand_sequence = _extract_chain_sequences(
         structure, mutation_info.chain_id, mutation_info.coi
     )
+    mutation = map_mutation_to_chain(structure, mutation_info.chain_id, mutation_info.mutation)
 
     if protein_sequence is None:
         raise EL2Error(f"Could not extract protein sequence for mutation: {mutation_info}.")
     if mutation_info.coi == COI.INTERFACE and ligand_sequence is None:
         raise EL2Error(f"Could not extract ligand sequence for mutation: {mutation_info}.")
-    if protein_sequence[int(mutation_info.mutation[1:-1]) - 1] != mutation_info.mutation[0]:
+    if protein_sequence[int(mutation[1:-1]) - 1] != mutation[0]:
         raise EL2Error(f"Mutation does not match extracted protein sequence: {mutation_info}.")
 
     structure_file_url = urljoin(
@@ -157,9 +158,7 @@ def extract_protein_info(mutation_info: MutationInfo) -> Dict:
         **{
             "protein_structure_url": structure_file_url,
             "protein_sequence": protein_sequence,
-            "mutations": map_mutation_to_chain(
-                structure, mutation_info.chain_id, mutation_info.mutation
-            ),
+            "mutations": mutation,
         },
         **({"ligand_sequence": ligand_sequence} if ligand_sequence is not None else {}),
     }
@@ -187,12 +186,11 @@ def _extract_chain_sequences(
 def map_mutation_to_chain(structure: PDB.Structure, chain_id: str, mutation: str) -> str:
     df = structure.to_dataframe()
     chain_df = df[df["chain_id"] == chain_id]
+    residue_idx = chain_df["residue_idx"].unique()
 
     residue_idx_map = {
         old_residue_idx: new_residue_idx
-        for (old_residue_idx, new_residue_idx) in zip(
-            chain_df["residue_idx"], chain_df["residue_idx"] - chain_df["residue_idx"].min()
-        )
+        for (old_residue_idx, new_residue_idx) in zip(residue_idx, residue_idx - residue_idx.min())
     }
 
     pos = int(mutation[1:-1])

@@ -20,7 +20,7 @@ def test_extract_protein_info(data_dir: Path, coi: COI):
         domain_or_interface_id=1,
         structure_file=structure_file.as_posix(),
         chain_id="B",
-        mutation="E1A",
+        mutation="E216A",  # 1 + 215 to account for amino acids in the first chain
         protein_id="test-local",
         coi=coi,
     )
