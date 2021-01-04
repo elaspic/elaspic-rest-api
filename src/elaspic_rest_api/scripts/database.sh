@@ -32,8 +32,6 @@ elaspic run \
     --connection_string="mysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/elaspic" \
     -u "${protein_id}" -m "${mutations}" -t ${elaspic_run_type}
 
-python "${SCRIPTS_DIR}/database.py" -u "${protein_id}" -m "${mutations}" -t ${run_type} -r ${ELASPIC_VERSION}
-
 echo "Finished successfully!"
 
 exit 0
