@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import shlex
+from asyncio import Queue
 from typing import Dict, Set
 
 from elaspic_rest_api import config
@@ -64,6 +65,35 @@ async def finalize_mutation(item: js.Item):
     await asyncio.create_subprocess_exec(*shlex.split(system_command))
 
 
+async def set_db_errors(error_queue):
+    async def helper(cur, item: js.Item):
+        job_id = item.args["job_id"]
+        protein_id = item.args["protein_id"]
+        mutation = item.args.get("mutations", "%")
+        if "_" in mutation:
+            mutation = mutation.split("_")[-1]
+        await cur.execute(SET_MUTATION_ERROR_SQL, (job_id, protein_id, mutation))
+
+    async with js.WDBConnection() as conn:
+        async with conn.cursor() as cur:
+            try:
+                if isinstance(error_queue, Queue):
+                    while not error_queue.empty():
+                        item = await error_queue.get()
+                        await helper(cur, item)
+                        logger.debug("set_db_errors for item %s", item)
+                else:
+                    for item in error_queue:
+                        await helper(cur, item)
+                        logger.debug("set_db_errors for item %s", item)
+                await conn.commit()
+            except Exception as e:
+                logger.error(
+                    "The following error occured while trying to send errors to the database: %s",
+                    e,
+                )
+
+
 async def finalize_lingering_jobs(ds: js.DataStructures) -> None:
     await js.set_db_errors(ds.pre_qsub_queue)
     await js.set_db_errors(ds.qsub_queue)
@@ -76,6 +106,16 @@ FINALIZE_SUBMISSION_SQL = """\
 UPDATE jobs
 SET isDone = 1, dateFinished = now()
 WHERE jobID = %s;
+"""
+
+SET_MUTATION_ERROR_SQL = """\
+UPDATE muts
+JOIN job_to_mut ON (job_to_mut.mut_id = muts.id)
+JOIN jobs ON (jobs.jobID = job_to_mut.job_id)
+SET muts.status = 'error'
+WHERE jobs.jobID = %s
+AND muts.protein = %s
+AND muts.mut = %s
 """
 
 FINALIZE_MUTATION_SQL = """\

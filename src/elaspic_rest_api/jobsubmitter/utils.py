@@ -1,12 +1,11 @@
 import logging
 import time
-from asyncio import Queue
-from textwrap import dedent
 from typing import Dict
 
 import aiofiles
 
 from elaspic_rest_api import jobsubmitter as js
+from elaspic_rest_api.finalize import set_db_errors
 
 logger = logging.getLogger(__name__)
 
@@ -47,44 +46,6 @@ async def restart_or_drop(
     else:
         await remove_from_monitored(item, ds.monitored_jobs)
         await set_db_errors([item])
-
-
-async def set_db_errors(error_queue):
-    async def helper(cur, item):
-        job_id = item.args["job_id"]
-        protein_id = item.args["protein_id"]
-        mut = item.args.get("mutations", "%")
-        db_command = dedent(
-            """\
-            UPDATE muts
-            JOIN job_to_mut ON (job_to_mut.mut_id = muts.id)
-            JOIN jobs ON (jobs.jobID = job_to_mut.job_id)
-            SET muts.status = 'error'
-            WHERE jobs.jobID = %s
-            AND muts.protein = %s
-            AND muts.mut = %s
-            """
-        )
-        await cur.execute(db_command, (job_id, protein_id, mut))
-
-    async with js.WDBConnection() as conn:
-        async with conn.cursor() as cur:
-            try:
-                if isinstance(error_queue, Queue):
-                    while not error_queue.empty():
-                        item = await error_queue.get()
-                        await helper(cur, item)
-                        logger.debug("set_db_errors for item %s", item)
-                else:
-                    for item in error_queue:
-                        await helper(cur, item)
-                        logger.debug("set_db_errors for item %s", item)
-                await conn.commit()
-            except Exception as e:
-                logger.error(
-                    "The following error occured while trying to send errors to the database:\n%s",
-                    e,
-                )
 
 
 async def remove_from_monitored(item: js.Item, monitored_jobs: Dict):
