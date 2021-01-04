@@ -5,7 +5,6 @@ from typing import Dict
 import aiofiles
 
 from elaspic_rest_api import jobsubmitter as js
-from elaspic_rest_api.finalize import set_db_errors
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ async def restart_or_drop(
         await ds.qsub_queue.put(item)
     else:
         await remove_from_monitored(item, ds.monitored_jobs)
-        await set_db_errors([item])
+        await js.set_db_errors([item])
 
 
 async def remove_from_monitored(item: js.Item, monitored_jobs: Dict):
