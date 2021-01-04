@@ -70,7 +70,7 @@ def parse_args():
     parser.add_argument("-m", "--mutations")
     parser.add_argument("-t", "--run_type")
     parser.add_argument("-d", "--data_dir", nargs="?", default=os.getcwd())
-    parser.add_argument("-r", "--elaspic-release", default="")
+    parser.add_argument("-r", "--elaspic-release", default="-")
     args = parser.parse_args()
     return args
 
@@ -324,7 +324,7 @@ def upload_model(unique_id, data_dir):
     return
 
 
-def upload_mutation(unique_id, mutation, data_dir, elaspic_version=""):
+def upload_mutation(unique_id, mutation, data_dir, elaspic_version="--"):
     """"""
     print("upload_mutation({}, {}, {})".format(unique_id, mutation, data_dir))
     #
@@ -401,15 +401,12 @@ def upload_mutation(unique_id, mutation, data_dir, elaspic_version=""):
     if "idxs" in mutation_result.columns:
         mutation_result_core = mutation_result[mutation_result["idxs"].isnull()].copy()
         mutation_result_core["protein_id"] = unique_id
-        print("mutation_result_core:\n'{}'".format(mutation_result_core))
 
         mutation_result_interface = mutation_result[mutation_result["idxs"].notnull()].copy()
         mutation_result_interface["protein_id"] = unique_id
-        print("mutation_result_interface:\n'{}'".format(mutation_result_interface))
     else:
         mutation_result_core = mutation_result
         mutation_result_core["protein_id"] = unique_id
-        print("mutation_result_core:\n'{}'".format(mutation_result_core))
 
         mutation_result_interface = pd.DataFrame()
 
@@ -428,6 +425,7 @@ def upload_mutation(unique_id, mutation, data_dir, elaspic_version=""):
 
     # Upload
     mutation_result_core = drop_columns(mutation_result_core, core_mutation_columns)
+    print("mutation_result_core:\n'{}'".format(mutation_result_core))
     upload_data(connection, mutation_result_core, CORE_MUTATION_TABLE)
 
     if mutation_result_interface.empty:
@@ -475,6 +473,7 @@ def upload_mutation(unique_id, mutation, data_dir, elaspic_version=""):
 
     # Upload
     mutation_result_interface = drop_columns(mutation_result_interface, interface_mutation_columns)
+    print("mutation_result_interface:\n'{}'".format(mutation_result_interface))
     upload_data(connection, mutation_result_interface, INTERFACE_MUTATION_TABLE)
 
     connection.close()
