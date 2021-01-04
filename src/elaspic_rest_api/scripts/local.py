@@ -99,17 +99,6 @@ def upload_data(connection, df, table_name):
     print("Uploaded data.")
 
 
-def finalize_mutation(connection, uniprot_id, mutation):
-    """Mark mutation as done or errored in the webserver database."""
-    mutation = mutation.split("_")[-1]  # the only difference between database and local
-    with connection.cursor() as cur:
-        sql_command = SQL_COMMAND.format(protein_id=uniprot_id, mutation=mutation)
-        print(sql_command)
-        cur.execute(sql_command)
-    connection.commit()
-    print("Finalized mutation!")
-
-
 def get_domain_id_lookup(connection, unique_id):
     sql_query = """\
 select protein_id, domain_idx, domain_id
@@ -442,7 +431,6 @@ def upload_mutation(unique_id, mutation, data_dir, elaspic_version=""):
     upload_data(connection, mutation_result_core, CORE_MUTATION_TABLE)
 
     if mutation_result_interface.empty:
-        finalize_mutation(connection, unique_id, mutation)
         connection.close()
         return
 
@@ -489,7 +477,6 @@ def upload_mutation(unique_id, mutation, data_dir, elaspic_version=""):
     mutation_result_interface = drop_columns(mutation_result_interface, interface_mutation_columns)
     upload_data(connection, mutation_result_interface, INTERFACE_MUTATION_TABLE)
 
-    finalize_mutation(connection, unique_id, mutation)
     connection.close()
     return
 
