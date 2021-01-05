@@ -67,7 +67,7 @@ def upload_data(connection, df, table_name):
         # try:
         db_command = get_insert_on_duplicate_key_update_sql(DB_SCHEMA, table_name, df.columns)
         print(db_command)
-        cur.executemany(db_command, [tuple(r) for r in df.to_records(index=False)])
+        cur.executemany(db_command, list(df.itertuples(index=False)))
         # finally:
         #     cur.execute("SET FOREIGN_KEY_CHECKS=1;")
     connection.commit()
@@ -454,6 +454,7 @@ def upload_mutation(unique_id, mutation, data_dir, elaspic_version="--"):
 
 
 if __name__ == "__main__":
+    print("Running ELASPIC script")
     args = parse_args()
     validate_args(args)
 
