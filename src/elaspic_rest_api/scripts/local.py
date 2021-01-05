@@ -3,6 +3,7 @@ import argparse
 import os
 import os.path as op
 import time
+from textwrap import dedent
 
 import MySQLdb
 import pandas as pd
@@ -43,14 +44,28 @@ def apply_notnull(df, column, fn):
     df.loc[df[column].notnull(), column] = df.loc[df[column].notnull(), column].apply(fn)
 
 
+def get_insert_on_duplicate_key_update_sql(schema_name, table_name, columns):
+    sql_command = dedent(
+        """\
+        INSERT INTO {}.{} ({})
+        VALUES ({})
+        ON DUPLICATE KEY UPDATE {};
+        """
+    ).format(
+        schema_name,
+        table_name,
+        ", ".join([f"`{c}`" for c in columns]),
+        ", ".join(["%s"] * len(columns)),
+        ", ".join([f"`{c}`=VALUES(`{c}`)" for c in columns]),
+    )
+    return sql_command
+
+
 def upload_data(connection, df, table_name):
     with connection.cursor() as cur:
         # cur.execute("SET FOREIGN_KEY_CHECKS=0;")
         # try:
-        columns = ",".join(df.columns)
-        db_command = "replace into {}.{} ({}) values ({});".format(
-            DB_SCHEMA, table_name, columns, ",".join(["%s" for _ in range(len(df.columns))])
-        )
+        db_command = get_insert_on_duplicate_key_update_sql(DB_SCHEMA, table_name, df.columns)
         print(db_command)
         cur.executemany(db_command, [tuple(r) for r in df.to_records(index=False)])
         # finally:
@@ -60,13 +75,13 @@ def upload_data(connection, df, table_name):
 
 
 def get_domain_id_lookup(connection, unique_id):
-    sql_query = """\
-select protein_id, domain_idx, domain_id
-from {}.{}
-where protein_id = '{}';
-""".format(
-        DB_SCHEMA, CORE_MODEL_TABLE, unique_id
-    )
+    sql_query = dedent(
+        """\
+        SELECT protein_id, domain_idx, domain_id
+        FROM {}.{}
+        WHERE protein_id = '{}';
+        """
+    ).format(DB_SCHEMA, CORE_MODEL_TABLE, unique_id)
     with connection.cursor() as cur:
         cur.execute(sql_query)
         result = cur.fetchall()
@@ -77,13 +92,13 @@ where protein_id = '{}';
 
 
 def get_interface_id_lookup(connection, unique_id):
-    sql_query = """\
-select domain_id_1, domain_id_2, interface_id
-from {0}.{1}
-where protein_id_1 = '{2}' or protein_id_2 = '{2}';
-""".format(
-        DB_SCHEMA, INTERFACE_MODEL_TABLE, unique_id
-    )
+    sql_query = dedent(
+        """\
+        SELECT domain_id_1, domain_id_2, interface_id
+        FROM {0}.{1}
+        WHERE protein_id_1 = '{2}' OR protein_id_2 = '{2}';
+    """
+    ).format(DB_SCHEMA, INTERFACE_MODEL_TABLE, unique_id)
     with connection.cursor() as cur:
         cur.execute(sql_query)
         result = cur.fetchall()
@@ -154,10 +169,8 @@ def upload_sequence(unique_id, data_dir):
     )
     try:
         with connection.cursor() as cur:
-            db_command = "replace into {}.elaspic_sequence_local ({}) values ({});".format(
-                DB_SCHEMA,
-                ",".join(sequence_result.columns),
-                ",".join(["%s" for _ in range(len(sequence_result.columns))]),
+            db_command = get_insert_on_duplicate_key_update_sql(
+                DB_SCHEMA, "elaspic_sequence_local", sequence_result.columns
             )
             print(db_command)
             cur.executemany(db_command, [tuple(r) for r in sequence_result.to_records(index=False)])
