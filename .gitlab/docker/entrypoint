@@ -38,4 +38,5 @@ conda activate app
 /opt/conda/bin/$supkg elaspic python -m elaspic_rest_api --log-level debug copy-scripts
 
 # Run whatever the user wants
+umask 002
 exec /opt/conda/bin/$supkg elaspic "$@"
