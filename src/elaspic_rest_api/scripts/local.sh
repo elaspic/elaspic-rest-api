@@ -18,7 +18,7 @@ function finish {
 }
 trap finish INT TERM EXIT
 
-cd "/home/kimlab1/database_data/elaspic_v2/user_input/${protein_id}"
+cd "/home/kimlab1/database_data/elaspic/user_input/${protein_id}"
 mkdir -p "./pbs-output"
 exec >"./pbs-output/${SLURM_JOB_ID}.out" 2>"./pbs-output/${SLURM_JOB_ID}.err"
 
@@ -28,7 +28,7 @@ export PATH="/home/kimlab1/jobsubmitter/anaconda3/envs/elaspic$([[ -z ${ELASPIC_
 elaspic run \
     --pdb_dir='/home/kimlab1/database_data/pdb/ftp/data/structures/divided/pdb/' \
     --blast_db_dir='/home/kimlab1/database_data/blast/db' \
-    --archive_dir='/home/kimlab1/database_data/elaspic_v2/' \
+    --archive_dir='/home/kimlab1/database_data/elaspic/' \
     -p "${structure_file}" -s "${sequence_file}" -m "${mutations}" -n 3 -t ${elaspic_run_type}
 
 python "${SCRIPTS_DIR}/local.py" -u "${protein_id}" -m "${mutations}" -t ${run_type} -r ${ELASPIC_VERSION}
