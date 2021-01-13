@@ -2,7 +2,7 @@ import asyncio
 import logging
 import shlex
 import time
-from typing import Callable, Dict, Mapping, Set, Tuple
+from typing import Callable, Mapping, Set, Tuple
 
 import aiofiles
 
