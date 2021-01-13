@@ -2,7 +2,7 @@ import asyncio
 import logging
 import shlex
 import time
-from typing import Mapping, Set, Tuple
+from typing import Callable, Dict, Mapping, Set, Tuple
 
 import aiofiles
 
@@ -17,7 +17,9 @@ running_jobs_last_updated = 0.0
 validation_last_updated = 0.0
 
 
-async def show_stats(ds: js.DataStructures, tasks: Mapping[str, asyncio.Task]) -> None:
+async def monitor_stats(
+    ds: js.DataStructures, task_fns: Mapping[str, Callable], tasks: Mapping[str, asyncio.Task]
+):
     while True:
         logger.info("*" * 50)
         logger.info("{:40}{:10}".format("pre_qsub_queue:", ds.pre_qsub_queue.qsize()))
@@ -29,12 +31,15 @@ async def show_stats(ds: js.DataStructures, tasks: Mapping[str, asyncio.Task]) -
 
         # logger.debug('precalculated: {}'.format(precalculated))
         logger.info("precalculated_cache: {}".format(ds.precalculated_cache))
-        for task_name, task in tasks.items():
+        for task_name, task_fn in list(task_fns.items()):
+            task = tasks[task_name]
             is_done = task.done()
             if is_done:
                 error = task.exception()
                 if error is not None:
                     task.print_stack()
+                    logger.error("Task %s finished with an error: %s. Restarting", task_name, error)
+                    tasks[task_name] = asyncio.create_task(task_fn(), name=task_name)
                     task_state = f"error ({type(error)}: {error})"
                 else:
                     task_state = "done"

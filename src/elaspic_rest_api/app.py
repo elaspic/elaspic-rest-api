@@ -70,18 +70,18 @@ def warmup():
 @app.on_event("startup")
 async def on_startup() -> None:
     js_data["ds"] = js.DataStructures()
-    js_data["tasks"] = await js.start_jobsubmitter(js_data["ds"])
+    js_data["js_task"] = asyncio.create_task(
+        js.start_jobsubmitter(js_data["ds"]), name="jobsubmitter"
+    )
 
 
 @app.on_event("shutdown")
 async def on_shutdown() -> None:
-    for task_name, task in js_data["tasks"].items():
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
+    js_task = js_data["js_task"]
+    js_task.cancel()
+
     await js.finalize_lingering_jobs(js_data["ds"])
+    await js_task
 
 
 if config.SENTRY_DSN:

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from typing import Dict, List, Set, Tuple
 
 from elaspic_rest_api import jobsubmitter as js
@@ -11,27 +12,33 @@ executor = ThreadPoolExecutor()
 
 
 async def start_jobsubmitter(ds: js.DataStructures) -> Dict[str, asyncio.Task]:
-    tasks = {}
-    tasks["update_precalculated"] = asyncio.create_task(
-        js.update_precalculated(ds.precalculated), name="update_precalculated"
-    )
-    tasks["persist_precalculated"] = asyncio.create_task(
-        js.persist_precalculated(ds.precalculated, ds.precalculated_cache),
-        name="persist_precalculated",
-    )
-    tasks["pre_qsub"] = asyncio.create_task(js.pre_qsub(ds), name="pre_qsub")
-    tasks["qsub"] = asyncio.create_task(js.qsub(ds), name="qsub")
-    tasks["qstat"] = asyncio.create_task(js.qstat(), name="qstat")
-    tasks["validation"] = asyncio.create_task(js.validation(ds), name="validation")
-    tasks["el2_submit"] = asyncio.create_task(js.elaspic2_submit_loop(ds), name="el2_submit")
-    tasks["el2_collect"] = asyncio.create_task(js.elaspic2_collect_loop(ds), name="el2_collect")
-    tasks["finalize_finished_submissions"] = asyncio.create_task(
-        js.finalize_finished_submissions_loop(ds.monitored_jobs),
-        name="finalize_finished_submissions_loop",
-    )
-    tasks["show_stats"] = asyncio.create_task(js.show_stats(ds, tasks), name="show_stats")
+    task_fns = {
+        "update_precalculated": partial(js.update_precalculated, ds.precalculated),
+        "persist_precalculated": partial(
+            js.persist_precalculated, ds.precalculated, ds.precalculated_cache
+        ),
+        "pre_qsub": partial(js.pre_qsub, ds),
+        "qsub": partial(js.qsub, ds),
+        "qstat": js.qstat,
+        "validation": partial(js.validation, ds),
+        "el2_submit": partial(js.elaspic2_submit_loop, ds),
+        "el2_collect": partial(js.elaspic2_collect_loop, ds),
+        "finalize_finished_submissions": partial(
+            js.finalize_finished_submissions_loop, ds.monitored_jobs
+        ),
+    }
 
-    return tasks
+    tasks: Dict[str, asyncio.Task] = {}
+    for task_name, task_fn in task_fns.items():
+        if task_name not in tasks:
+            logger.info("Creating task %s", task_name)
+            tasks[task_name] = asyncio.create_task(task_fn(), name=task_name)
+
+    try:
+        await js.monitor_stats(ds, task_fns, tasks)
+    except asyncio.CancelledError:
+        for task in tasks.values():
+            task.cancel()
 
 
 async def submit_job(data_in: DataIn, ds: js.DataStructures):
