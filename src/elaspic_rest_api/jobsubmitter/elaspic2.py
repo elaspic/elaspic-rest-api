@@ -23,24 +23,24 @@ async def elaspic2_submit_loop(ds: js.DataStructures) -> None:
     loop = asyncio.get_running_loop()
     executor = ProcessPoolExecutor(1)
 
-    async with aiohttp.ClientSession() as session:
-        while True:
-            item = await ds.elaspic2_pending_queue.get()
-            mutation_info_list = await get_mutation_info(item)
-            mutation_info_list = await loop.run_in_executor(
-                None, resolve_mutation_info, mutation_info_list
-            )
-            protein_info_list = await loop.run_in_executor(
-                executor, extract_protein_info_list, mutation_info_list
-            )
+    while True:
+        item = await ds.elaspic2_pending_queue.get()
+        mutation_info_list = await get_mutation_info(item)
+        mutation_info_list = await loop.run_in_executor(
+            None, resolve_mutation_info, mutation_info_list
+        )
+        protein_info_list = await loop.run_in_executor(
+            executor, extract_protein_info_list, mutation_info_list
+        )
 
-            item.el2_mutation_info_list = []
-            for mutation_info, protein_info in zip(mutation_info_list, protein_info_list):
+        item.el2_mutation_info_list = []
+        for mutation_info, protein_info in zip(mutation_info_list, protein_info_list):
+            async with aiohttp.ClientSession() as session:
                 async with session.post(elaspic2_jobs_api, json=protein_info) as resp:
                     job_request = await resp.json()
-                mutation_info = mutation_info._replace(el2_web_url=job_request["web_url"])
-                item.el2_mutation_info_list.append(mutation_info)
-            await ds.elaspic2_running_queue.put(item)
+            mutation_info = mutation_info._replace(el2_web_url=job_request["web_url"])
+            item.el2_mutation_info_list.append(mutation_info)
+        await ds.elaspic2_running_queue.put(item)
 
 
 async def elaspic2_collect_loop(ds: js.DataStructures) -> None:
