@@ -44,47 +44,62 @@ async def elaspic2_submit_loop(ds: js.DataStructures) -> None:
 
 
 async def elaspic2_collect_loop(ds: js.DataStructures) -> None:
-    async with aiohttp.ClientSession() as session:
-        while True:
-            for _ in range(ds.elaspic2_running_queue.qsize()):
-                item = await ds.elaspic2_running_queue.get()
-
-                mutation_scores = []
-                is_finished = True
-                for mutation_info in item.el2_mutation_info_list:
-                    async with session.get(mutation_info.el2_web_url) as resp:
-                        try:
-                            job_status = await resp.json()
-                        except Exception as e:
-                            logger.error("Failed to retrieve ELASPIC2 status with error: %s.", e)
-                            is_finished = False
-                            break
-                    if job_status["status"] not in ["error", "success"]:
-                        is_finished = False
-                        break
-                    async with session.get(job_status["web_url"]) as resp:
-                        try:
-                            job_result = await resp.json()
-                        except Exception as e:
-                            logger.error("Failed to retrieve ELASPIC2 status with error: %s.", e)
-                            is_finished = False
-                            break
-                    mutation_score = job_result_to_mutation_scores(mutation_info, job_result[0])
-                    mutation_scores.append(mutation_score)
-
-                if not is_finished:
-                    logger.debug("EL2 job is still running for item %s", item)
-                    await ds.elaspic2_running_queue.put(item)
-                    continue
-
-                for mutation_info in item.el2_mutation_info_list:
-                    await session.delete(mutation_info.el2_web_url)
-
+    while True:
+        for _ in range(ds.elaspic2_running_queue.qsize()):
+            item = await ds.elaspic2_running_queue.get()
+            mutation_scores = await _el2_collect_mutation_scores(item)
+            if mutation_scores is None:
+                logger.debug("EL2 job is still running for item %s", item)
+                await ds.elaspic2_running_queue.put(item)
+            else:
                 logger.debug("Mutation scores for job_id %s: %s", item.job_id, mutation_scores)
                 await update_mutation_scores(item.args["job_type"], mutation_scores)
                 await js.finalize_mutation(item)
                 await js.remove_from_monitored(item, ds.monitored_jobs)
-            await asyncio.sleep(30)
+                await _el2_delete_jobs([mi.el2_web_url for mi in item.el2_mutation_info_list])
+        await asyncio.sleep(30)
+
+
+async def _el2_collect_mutation_scores(item: js.Item) -> Optional[List[MutationInfo]]:
+    mutation_scores: List[MutationInfo] = []
+    for mutation_info in item.el2_mutation_info_list:
+        job_status = await _el2_get_status(mutation_info.el2_web_url)
+        if job_status is None or job_status["status"] not in ["error", "success"]:
+            return
+
+        job_result = await _el2_get_result(job_status["web_url"])
+        if job_result is None:
+            return
+
+        mutation_score = job_result_to_mutation_scores(mutation_info, job_result[0])
+        mutation_scores.append(mutation_score)
+    return mutation_scores
+
+
+async def _el2_get_status(el2_status_web_url: str) -> Optional[Dict]:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(el2_status_web_url) as resp:
+            try:
+                job_status = await resp.json()
+                return job_status
+            except Exception as e:
+                logger.error("Failed to retrieve ELASPIC2 status with error: %s.", e)
+
+
+async def _el2_get_result(el2_result_web_url: str) -> Optional[Dict]:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(el2_result_web_url) as resp:
+            try:
+                job_result = await resp.json()
+                return job_result
+            except Exception as e:
+                logger.error("Failed to retrieve ELASPIC2 result with error: %s.", e)
+
+
+async def _el2_delete_jobs(el2_status_web_urls: List[str]) -> None:
+    async with aiohttp.ClientSession() as session:
+        for el2_status_web_url in el2_status_web_urls:
+            await session.delete(el2_status_web_url)
 
 
 def job_result_to_mutation_scores(mutation_info: MutationInfo, job_result: Dict) -> MutationInfo:
