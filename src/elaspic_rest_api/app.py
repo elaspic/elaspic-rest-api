@@ -74,11 +74,22 @@ async def on_startup() -> None:
         js.start_jobsubmitter(js_data["ds"]), name="jobsubmitter"
     )
 
+    await asyncio.sleep(0.1)
+
+    js_task = js_data["js_task"]
+    if js_task.done() and (error := js_task.exception()):
+        js_task.print_stack()
+        logger.error("Task %s finished with an error: %s", js_task.name, error)
+
 
 @app.on_event("shutdown")
 async def on_shutdown() -> None:
     js_task = js_data["js_task"]
     js_task.cancel()
+
+    if js_task.done() and (error := js_task.exception()):
+        js_task.print_stack()
+        logger.error("Task %s finished with an error: %s", js_task.name, error)
 
     await js.finalize_lingering_jobs(js_data["ds"])
     await js_task

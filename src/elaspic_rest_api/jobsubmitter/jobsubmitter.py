@@ -39,6 +39,7 @@ async def start_jobsubmitter(ds: js.DataStructures) -> Dict[str, asyncio.Task]:
     except asyncio.CancelledError:
         for task in tasks.values():
             task.cancel()
+        await asyncio.gather(*list(tasks.values()))
 
 
 async def submit_job(data_in: DataIn, ds: js.DataStructures):
