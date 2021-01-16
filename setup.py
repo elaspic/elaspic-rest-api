@@ -8,7 +8,7 @@ def read_file(file):
 
 setup(
     name="elaspic-rest-api",
-    version="0.2.5",
+    version="0.2.6",
     description="ELASPIC REST API",
     long_description=read_file("README.md"),
     long_description_content_type="text/markdown",
