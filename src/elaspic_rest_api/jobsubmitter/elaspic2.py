@@ -71,6 +71,11 @@ async def _el2_collect_mutation_scores(item: js.Item) -> Optional[List[MutationI
         if job_result is None:
             return
 
+        # It is possible that EL2 fails to calculate scores for some mutations,
+        # in which case we simply skip those mutations.
+        if not job_result:
+            continue
+
         mutation_score = job_result_to_mutation_scores(mutation_info, job_result[0])
         mutation_scores.append(mutation_score)
     return mutation_scores
