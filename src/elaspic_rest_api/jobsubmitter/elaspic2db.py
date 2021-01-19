@@ -170,14 +170,16 @@ async def update_mutation_scores(job_type: str, mutation_scores: List[MutationIn
                 else:
                     update_mutation_sql = interface_mutation_sql
 
-                await cur.execute(
-                    update_mutation_sql,
-                    {key: getattr(mutation_score, key) for key in required_attributes},
-                )
+                attributes = {key: getattr(mutation_score, key) for key in required_attributes}
+                await cur.execute(update_mutation_sql, attributes)
                 if cur.rowcount != 1:
                     logger.error(
-                        "Unexpected number of rows modified when updating database: %s.",
+                        "Unexpected number of rows modified when updating database: %s "
+                        "(job_type = %s, coi = %s, attributes = %s).",
                         cur.rowcount,
+                        job_type,
+                        mutation_score.coi.value,
+                        attributes,
                     )
         await conn.commit()
 
