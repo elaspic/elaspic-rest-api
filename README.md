@@ -7,7 +7,7 @@
 ## Overview
 
 <p align="center">
-<img src="docs/_static/workflow-diagram.svg" />
+<img src="docs/_static/images/workflow-diagram.svg" />
 </p>
 
 ## Development
