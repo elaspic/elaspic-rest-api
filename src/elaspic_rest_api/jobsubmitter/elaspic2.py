@@ -64,7 +64,7 @@ async def _el2_collect_mutation_scores(item: js.Item) -> Optional[List[MutationI
     mutation_scores: List[MutationInfo] = []
     for mutation_info in item.el2_mutation_info_list:
         job_status = await _el2_get_status(mutation_info.el2_web_url)
-        if job_status is None or job_status["status"] not in ["error", "success"]:
+        if job_status is None or job_status["status"] not in ["failed", "success"]:
             return
 
         job_result = await _el2_get_result(job_status["web_url"])
