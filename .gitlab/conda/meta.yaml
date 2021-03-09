@@ -14,7 +14,7 @@ requirements:
   build:
     - python
   run:
-    - python
+    - python =3.8
     # Webserver packages
     - aiofiles =0.5
     - aiohttp =3.7
