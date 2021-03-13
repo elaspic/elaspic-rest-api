@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 async def elaspic2_submit_loop(ds: js.DataStructures) -> None:
-    elaspic2_jobs_api = urljoin(config.ELASPIC2_URL, "/jobs/")
+    elaspic2_jobs_api = urljoin(config.ELASPIC2_URL, "jobs/")
     loop = asyncio.get_running_loop()
     executor = ProcessPoolExecutor(1)
 
@@ -64,7 +64,20 @@ async def _el2_collect_mutation_scores(item: js.Item) -> Optional[List[MutationI
     mutation_scores: List[MutationInfo] = []
     for mutation_info in item.el2_mutation_info_list:
         job_status = await _el2_get_status(mutation_info.el2_web_url)
-        if job_status is None or job_status["status"] not in ["failed", "success"]:
+        # TODO: Throws KeyError("status")
+        if job_status is None:
+            return
+
+        if "status" not in job_status:
+            logger.error(
+                "mutation_info: %s; job_status: %s; web_url: %s",
+                mutation_info,
+                job_status,
+                mutation_info.el2_web_url,
+            )
+            return
+
+        if job_status["status"] not in ["failed", "success"]:
             return
 
         job_result = await _el2_get_result(job_status["web_url"])
